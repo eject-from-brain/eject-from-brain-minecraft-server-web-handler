@@ -115,15 +115,35 @@ public class ServerController {
             return ResponseEntity.badRequest().body("Сервер не запущен");
         }
 
-        ServerStats stats = serverService.getStats();
-        boolean sent = telegramBotService.sendServerStats(stats);
+        try {
+            // 1. Запрашиваем актуальные данные с сервера
+            requestStats();
 
-        if (sent) {
-            return ResponseEntity.ok("Статистика отправлена в Telegram");
-        } else {
+            // 2. Ждем 5 секунд для сбора данных (можно настроить таймаут)
+            Thread.sleep(5000);
+
+            // 3. Получаем собранную статистику
+            ServerStats stats = serverService.getStats();
+
+            // 4. Отправляем в Telegram
+            boolean sent = telegramBotService.sendServerStats(stats);
+
+            if (sent) {
+                return ResponseEntity.ok("Статистика отправлена в Telegram");
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Ошибка отправки статистики");
+            }
+        } catch (IOException | InterruptedException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Ошибка отправки статистики");
+                    .body("Ошибка: " + e.getMessage());
         }
+    }
+
+    private void requestStats() throws IOException {
+        // Отправляем команды для получения актуальных данных
+        serverService.sendCommand("list");  // Для получения информации об игроках
+        serverService.sendCommand("tps");   // Для получения TPS
     }
 
     @PostMapping("/telegram/test")
@@ -174,27 +194,5 @@ public class ServerController {
 
     private void sendToConsole(String message) {
         messagingTemplate.convertAndSend("/topic/console", message);
-    }
-
-    private void requestStats() {
-        if (serverService.isServerRunning()) {
-            try {
-                serverService.sendCommand("list");
-                serverService.sendCommand("tps");
-
-                scheduler.schedule(() -> {
-                    ServerStats stats = serverDataService.getStats();
-                    sendToConsole(stats.toFormattedString());
-
-                    if (telegramBotService != null) {
-                        telegramBotService.sendMessage(stats.toFormattedString());
-                    }
-                }, 5, TimeUnit.SECONDS);
-            } catch (IOException e) {
-                sendToConsole("Ошибка запроса статистики: " + e.getMessage());
-            }
-        } else {
-            sendToConsole("Сервер не запущен, статистика недоступна");
-        }
     }
 }
