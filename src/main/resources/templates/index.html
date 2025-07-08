@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Minecraft Server Handler</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        #console {
+            font-family: Consolas, monospace;
+            height: 400px;
+            overflow-y: auto;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 10px;
+            white-space: pre-wrap;
+        }
+        .tab-content {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <h1>Minecraft Server Manager</h1>
+
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="server-tab" data-bs-toggle="tab"
+                    data-bs-target="#server" type="button" role="tab">Server</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="telegram-tab" data-bs-toggle="tab"
+                    data-bs-target="#telegram" type="button" role="tab">Telegram Bot</button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+        <!-- Server Tab -->
+        <div class="tab-pane fade show active" id="server" role="tabpanel">
+            <div class="mb-3">
+                <label class="form-label">Server Command:</label>
+                <input type="text" class="form-control" id="serverCommand"
+                       value="java -Xmx8G -Xms1G -jar server.jar nogui">
+            </div>
+
+            <div class="mb-3">
+                <button id="startStopBtn" class="btn btn-primary">Start</button>
+                <button id="restartBtn" class="btn btn-warning" disabled>Restart</button>
+                <button id="statsBtn" class="btn btn-info" disabled>Get Stats</button>
+                <button id="clearConsoleBtn" class="btn btn-secondary">Clear Console</button>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Poll Interval (hours):</label>
+                <div class="input-group" style="width: 200px;">
+                    <input type="number" class="form-control" id="pollInterval" value="3">
+                    <button id="applyIntervalBtn" class="btn btn-outline-secondary">Apply</button>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Server Console:</label>
+                <div id="console"></div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Server Command:</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="serverCommandInput" disabled>
+                    <button class="btn btn-primary" id="sendCommandBtn" disabled>Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Telegram Tab -->
+        <div class="tab-pane fade" id="telegram" role="tabpanel">
+            <div class="mb-3">
+                <label class="form-label">Bot Token:</label>
+                <input type="password" class="form-control" id="botToken">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Chat ID:</label>
+                <input type="text" class="form-control" id="chatId">
+            </div>
+
+            <button id="testTelegramBtn" class="btn btn-primary">Test Connection</button>
+
+            <div class="mt-3">
+                <h5>Note:</h5>
+                <ul>
+                    <li>Create a bot via @BotFather</li>
+                    <li>Get the bot token</li>
+                    <li>Find your chat ID (e.g., via @userinfobot)</li>
+                    <li>Enter the data above</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.2/dist/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>
