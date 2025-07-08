@@ -5,7 +5,10 @@ import org.ejectfb.minecraftserverwebhandler.services.ServerDataService;
 import org.ejectfb.minecraftserverwebhandler.services.ServerService;
 import org.ejectfb.minecraftserverwebhandler.services.TelegramBotService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -34,17 +37,22 @@ public class ServerController {
     }
 
     @PostMapping("/start")
-    public void startServer(@RequestParam String command) {
+    public ResponseEntity<String> startServer(@RequestParam String command) {
         try {
             serverDataService.setServerStartTime(System.currentTimeMillis());
             serverService.startServer(command);
             sendToConsole("Сервер запущен: " + command);
 
             if (telegramBotService != null) {
-                telegramBotService.sendMessage("✅ Сервер Minecraft запущен");
+                boolean sent = telegramBotService.sendServerStartNotification();
+                return ResponseEntity.ok(sent ? "Server started with Telegram notification"
+                        : "Server started but Telegram notification failed");
             }
+            return ResponseEntity.ok("Server started without Telegram notification");
         } catch (IOException e) {
             sendToConsole("Ошибка запуска сервера: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error starting server: " + e.getMessage());
         }
     }
 
@@ -54,7 +62,18 @@ public class ServerController {
         sendToConsole("Сервер остановлен");
 
         if (telegramBotService != null) {
-            telegramBotService.sendMessage("⛔ Сервер Minecraft остановлен");
+            telegramBotService.sendServerStopNotification();
+        }
+    }
+
+    @Scheduled(fixedRate = 3 * 60 * 60 * 1000)
+    public void sendScheduledStats() {
+        if (serverService.isServerRunning()) {
+            ServerStats stats = serverService.getStats();
+            if (telegramBotService != null) {
+                telegramBotService.sendServerStats(stats);
+            }
+            sendToConsole("Scheduled stats sent to Telegram");
         }
     }
 
@@ -86,23 +105,51 @@ public class ServerController {
 
     @GetMapping("/stats")
     public ServerStats getStats() {
+        sendStatsToTelegram();
         return serverService.getStats();
     }
 
+    @PostMapping("/send-stats")
+    public ResponseEntity<String> sendStatsToTelegram() {
+        if (!serverService.isServerRunning()) {
+            return ResponseEntity.badRequest().body("Сервер не запущен");
+        }
+
+        ServerStats stats = serverService.getStats();
+        boolean sent = telegramBotService.sendServerStats(stats);
+
+        if (sent) {
+            return ResponseEntity.ok("Статистика отправлена в Telegram");
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Ошибка отправки статистики");
+        }
+    }
+
     @PostMapping("/telegram/test")
-    public String testTelegramConnection(@RequestParam String token,
-                                         @RequestParam String chatId) {
+    public ResponseEntity<String> testTelegramConnection(
+            @RequestParam String token,
+            @RequestParam String chatId) {
+
         try {
-            boolean connected = telegramBotService.testConnection(token, chatId);
-            if (connected) {
+            boolean isConnected = telegramBotService.testConnection(token, chatId);
+
+            if (isConnected) {
+                // Обновляем текущие настройки бота
                 telegramBotService.setBotToken(token);
                 telegramBotService.setChatId(chatId);
+
+                return ResponseEntity.ok("""
+                Проверка соединения успешна!
+                В чат Telegram должно было прийти тестовое сообщение.
+                Токен и chatId сохранены.""");
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Ошибка подключения к Telegram API. Проверьте токен и chatId.");
             }
-            sendToConsole(connected ? "Telegram бот подключен" : "Ошибка подключения Telegram бота");
-            return connected ? "Connected" : "Connection failed";
         } catch (Exception e) {
-            sendToConsole("Ошибка подключения Telegram: " + e.getMessage());
-            return "Error: " + e.getMessage();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Ошибка: " + e.getMessage());
         }
     }
 
