@@ -16,34 +16,50 @@ document.addEventListener('DOMContentLoaded', function() {
     let isServerRunning = false;
     let stompClient = null;
 
-    // WebSocket connection
     function connect() {
         const socket = new SockJS('/ws');
         stompClient = Stomp.over(socket);
         stompClient.connect({}, function(frame) {
             console.log('Connected: ' + frame);
             stompClient.subscribe('/topic/console', function(message) {
-                appendToConsole(message.body);
+                if (message.body === "clear") {
+                    consoleElement.innerHTML = '';
+                } else {
+                    appendToConsole(message.body);
+                }
             });
         });
     }
 
     function checkServerStatus() {
         fetch('/api/server/status')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error('Error checking server status');
+                return response.json();
+            })
             .then(status => {
                 isServerRunning = status;
+                updateUI();
+            })
+            .catch(error => {
+                appendToConsole(error.message);
+                isServerRunning = false;
                 updateUI();
             });
     }
 
     function appendToConsole(text) {
-        consoleElement.innerHTML += text + '\n';
-        consoleElement.scrollTop = consoleElement.scrollHeight;
+        if (text === "clear") {
+            consoleElement.innerHTML = '';
+        } else {
+            consoleElement.innerHTML += text + '\n';
+            consoleElement.scrollTop = consoleElement.scrollHeight;
+        }
     }
 
     function updateUI() {
         startStopBtn.textContent = isServerRunning ? 'Stop' : 'Start';
+        startStopBtn.className = isServerRunning ? 'btn btn-danger' : 'btn btn-success';
         restartBtn.disabled = !isServerRunning;
         statsBtn.disabled = !isServerRunning;
         serverCommandInput.disabled = !isServerRunning;
@@ -65,6 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(error => appendToConsole(error.message));
         } else {
+            appendToConsole("clear")
             const command = serverCommand.value;
             fetch('/api/server/start?command=' + encodeURIComponent(command), { method: 'POST' })
                 .then(response => {
@@ -82,8 +99,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     restartBtn.addEventListener('click', function() {
         fetch('/api/server/restart', { method: 'POST' })
-            .then(response => response.text())
-            .then(message => appendToConsole(message));
+            .then(response => {
+                if (!response.ok) throw new Error('Error restarting server');
+                return response.text();
+            })
+            .then(message => appendToConsole(message))
+            .catch(error => appendToConsole(error.message));
     });
 
     statsBtn.addEventListener('click', function() {
@@ -91,17 +112,19 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(stats => {
                 let statsText = `Server Stats:
-Players: ${stats.onlinePlayers}
-TPS: ${stats.tps}
-Memory: ${stats.memory}
-Uptime: ${stats.upTime}`;
+                                        Players: ${stats.onlinePlayers}
+                                        TPS: ${stats.tps}
+                                        Memory: ${stats.memory}
+                                        Uptime: ${stats.upTime}`;
                 appendToConsole(statsText);
             });
     });
 
     clearConsoleBtn.addEventListener('click', function() {
-        consoleElement.innerHTML = '';
-        appendToConsole('--- Console cleared ---');
+        fetch('/api/server/clear', { method: 'POST' })
+            .then(() => {
+                consoleElement.innerHTML = '';
+            });
     });
 
     serverCommandInput.addEventListener('keypress', function(e) {
@@ -125,8 +148,13 @@ Uptime: ${stats.upTime}`;
 
     applyIntervalBtn.addEventListener('click', function() {
         const interval = pollInterval.value;
-        appendToConsole(`Poll interval set to ${interval} hours`);
-        // Here you would typically send this to the backend
+        fetch('/api/server/interval?hours=' + encodeURIComponent(interval), { method: 'POST' })
+            .then(response => {
+                if (!response.ok) throw new Error('Error setting poll interval');
+                return response.text();
+            })
+            .then(message => appendToConsole(message))
+            .catch(error => appendToConsole(error.message));
     });
 
     testTelegramBtn.addEventListener('click', function() {

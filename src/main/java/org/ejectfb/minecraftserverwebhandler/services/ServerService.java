@@ -22,6 +22,7 @@ public class ServerService {
     private final SimpMessagingTemplate messagingTemplate;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private volatile boolean isServerRunning = false;
+    private volatile boolean userRequestedStop = false;
     private int pollIntervalHours = 3;
     private Timer statsTimer;
     private String serverCommand;
@@ -37,8 +38,7 @@ public class ServerService {
         if (isServerRunning) {
             throw new IllegalStateException("Server is already running");
         }
-
-        // Очищаем предыдущие данные
+        userRequestedStop = false;
         dataService.reset();
         dataService.setServerStartTime(System.currentTimeMillis());
 
@@ -60,13 +60,8 @@ public class ServerService {
 
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    // Отправляем вывод в WebSocket
                     messagingTemplate.convertAndSend("/topic/console", line);
-
-                    // Парсим данные для статистики
                     dataService.parseConsoleLine(line);
-
-                    // Проверяем завершение сервера
                     if (line.contains("Stopping server") || line.contains("Closing Server")) {
                         handleServerStopped();
                     }
@@ -89,6 +84,7 @@ public class ServerService {
 
     public synchronized void stopServer() {
         if (!isServerRunning || serverProcess == null) return;
+        userRequestedStop = true;
 
         try {
             sendCommand("stop");
@@ -102,8 +98,6 @@ public class ServerService {
         } catch (IOException e) {
             sendToConsole("Error sending stop command: " + e.getMessage());
             serverProcess.destroyForcibly();
-        } finally {
-            handleServerStopped();
         }
     }
 
@@ -111,6 +105,7 @@ public class ServerService {
         if (!isServerRunning) return;
 
         sendToConsole("Restarting server...");
+        clearConsole();
         stopServer();
 
         scheduler.schedule(() -> {
@@ -169,20 +164,24 @@ public class ServerService {
         }, pollIntervalHours * 3600 * 1000L, pollIntervalHours * 3600 * 1000L);
     }
 
-    private void sendStatsToConsole() {
-        ServerStats stats = getStats();
-        String statsMessage = String.format(
-                "Server Stats [%s]%nPlayers: %s%nTPS: %s%nMemory: %s%nUptime: %s",
-                stats.getTimestamp(), stats.getOnlinePlayers(),
-                stats.getTps(), stats.getMemory(), stats.getUpTime()
-        );
-        sendToConsole(statsMessage);
-    }
-
     private void handleServerStopped() {
         if (isServerRunning) {
             isServerRunning = false;
             sendToConsole("Server stopped");
+
+            if (!userRequestedStop) {
+                scheduler.schedule(() -> {
+                    try {
+                        clearConsole();
+                        startServer(serverCommand);
+                    } catch (IOException e) {
+                        sendToConsole("Failed to restart server: " + e.getMessage());
+                    }
+                }, 5, TimeUnit.SECONDS);
+            } else {
+                userRequestedStop = false;
+            }
+
             cleanupResources();
         }
     }
@@ -200,6 +199,20 @@ public class ServerService {
 
     private void sendToConsole(String message) {
         messagingTemplate.convertAndSend("/topic/console", message);
+    }
+
+    private void sendStatsToConsole() {
+        ServerStats stats = getStats();
+        String statsMessage = String.format(
+                "Server Stats [%s]%nPlayers: %s%nTPS: %s%nMemory: %s%nUptime: %s",
+                stats.getTimestamp(), stats.getOnlinePlayers(),
+                stats.getTps(), stats.getMemory(), stats.getUpTime()
+        );
+        sendToConsole(statsMessage);
+    }
+
+    private void clearConsole() {
+        messagingTemplate.convertAndSend("/topic/console", "clear");
     }
 
     public String getServerCommand() {

@@ -116,18 +116,10 @@ public class ServerController {
         }
 
         try {
-            // 1. Запрашиваем актуальные данные с сервера
             requestStats();
-
-            // 2. Ждем 5 секунд для сбора данных (можно настроить таймаут)
             Thread.sleep(5000);
-
-            // 3. Получаем собранную статистику
             ServerStats stats = serverService.getStats();
-
-            // 4. Отправляем в Telegram
             boolean sent = telegramBotService.sendServerStats(stats);
-
             if (sent) {
                 return ResponseEntity.ok("Статистика отправлена в Telegram");
             } else {
@@ -141,9 +133,8 @@ public class ServerController {
     }
 
     private void requestStats() throws IOException {
-        // Отправляем команды для получения актуальных данных
-        serverService.sendCommand("list");  // Для получения информации об игроках
-        serverService.sendCommand("tps");   // Для получения TPS
+        serverService.sendCommand("list");
+        serverService.sendCommand("tps");
     }
 
     @PostMapping("/telegram/test")
@@ -155,7 +146,6 @@ public class ServerController {
             boolean isConnected = telegramBotService.testConnection(token, chatId);
 
             if (isConnected) {
-                // Обновляем текущие настройки бота
                 telegramBotService.setBotToken(token);
                 telegramBotService.setChatId(chatId);
 
@@ -178,7 +168,7 @@ public class ServerController {
         if (hours > 0) {
             this.pollIntervalHours = hours;
             serverService.setPollInterval(hours);
-            sendToConsole("Интервал опроса установлен: " + hours + " часов");
+            sendToConsole("New poll interval: " + hours + " hours");
         }
     }
 
@@ -189,7 +179,7 @@ public class ServerController {
 
     @PostMapping("/clear")
     public void clearConsole() {
-        messagingTemplate.convertAndSend("/topic/console", "--- Консоль очищена ---");
+        messagingTemplate.convertAndSend("/topic/console", "clear");
     }
 
     private void sendToConsole(String message) {
