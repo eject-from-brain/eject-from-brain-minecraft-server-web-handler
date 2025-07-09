@@ -12,7 +12,6 @@ public class ServerStats {
     private final String upTime;
     private String error;
 
-    // Основной конструктор
     public ServerStats(String onlinePlayers,
                        String tps,
                        String memory,
@@ -27,7 +26,6 @@ public class ServerStats {
         this.status = status;
     }
 
-    // Конструктор для ошибок
     public ServerStats(String error) {
         this(null, null, null, null, null, null);
         this.error = error;
@@ -62,7 +60,6 @@ public class ServerStats {
         return error;
     }
 
-    // Метод для форматированного вывода
     public String toFormattedString() {
         if (error != null) {
             return "Error: " + error;
@@ -79,7 +76,6 @@ public class ServerStats {
         );
     }
 
-    // Билдер для удобного создания объектов
     public static class Builder {
         private String onlinePlayers;
         private String tps;

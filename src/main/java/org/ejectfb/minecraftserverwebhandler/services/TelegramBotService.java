@@ -43,11 +43,7 @@ public class TelegramBotService {
                 while ((responseLine = br.readLine()) != null) {
                     response.append(responseLine.trim());
                 }
-
-                // Проверяем ответ API
                 boolean isOk = response.toString().contains("\"ok\":true");
-
-                // Если проверка успешна, отправляем тестовое сообщение
                 if (isOk) {
                     String testMessage = "✅ Проверка соединения: бот успешно подключен!";
                     sendTestMessage(testToken, testChatId, testMessage);
@@ -79,14 +75,10 @@ public class TelegramBotService {
                 byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
                 os.write(input, 0, input.length);
             }
-
-            // Проверяем ответ
             try (BufferedReader br = new BufferedReader(
                     new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                // Можно добавить логирование при необходимости
             }
         } catch (IOException e) {
-            // Логируем ошибку, но не прерываем выполнение
             System.err.println("Ошибка отправки тестового сообщения: " + e.getMessage());
         }
     }

@@ -23,7 +23,7 @@ public class ServerDataService {
 
     @PostConstruct
     public void init() {
-        reset(); // Инициализируем все значения
+        reset();
     }
 
     public void collectStatsData(String consoleText) {
@@ -96,16 +96,10 @@ public class ServerDataService {
 
         for (String line : lines) {
             if (line.contains("TPS from last")) {
-                // Находим часть после двоеточия
                 String tpsPart = line.substring(line.lastIndexOf(":") + 1).trim();
-
-                // Удаляем все нечисловые символы, кроме точек, запятых и минусов (для отрицательных чисел)
                 tpsPart = tpsPart.replaceAll("[^0-9.,-]", "");
-
-                // Разделяем значения
                 String[] tpsValues = tpsPart.split(",");
                 if (tpsValues.length >= 3) {
-                    // Берем первое значение (1m) и обрезаем пробелы
                     String firstTps = tpsValues[0].trim();
                     tps.set(firstTps);
                     return firstTps;

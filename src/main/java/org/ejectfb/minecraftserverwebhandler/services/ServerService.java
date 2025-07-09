@@ -53,7 +53,6 @@ public class ServerService {
         pb.environment().put("JAVA_TOOL_OPTIONS", "-Dfile.encoding=UTF-8");
         serverProcess = pb.start();
 
-        // Чтение вывода сервера в отдельном потоке
         Executors.newSingleThreadExecutor().submit(() -> {
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(serverProcess.getInputStream(), StandardCharsets.UTF_8))) {
