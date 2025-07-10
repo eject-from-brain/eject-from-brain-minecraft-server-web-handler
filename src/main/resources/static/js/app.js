@@ -20,6 +20,22 @@ document.addEventListener('DOMContentLoaded', function() {
         loadTelegramSettings();
         checkServerStatus();
         updateUI();
+        loadDefaultSettings();
+    }
+
+    function loadDefaultSettings() {
+        fetch('/api/server/settings/default')
+            .then(response => {
+                if (!response.ok) throw new Error('Error loading default settings');
+                return response.json();
+            })
+            .then(settings => {
+                maxMemory.value = settings.xmx;
+                initMemory.value = settings.xms;
+                serverJar.value = settings.jar;
+                pollInterval.value = settings.pollInterval;
+            })
+            .catch(error => console.log('Error loading default settings:', error));
     }
 
     function loadTelegramSettings() {

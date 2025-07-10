@@ -1,5 +1,6 @@
 package org.ejectfb.minecraftserverwebhandler.controllers;
 
+import org.ejectfb.minecraftserverwebhandler.config.ServerProperties;
 import org.ejectfb.minecraftserverwebhandler.dto.ServerStats;
 import org.ejectfb.minecraftserverwebhandler.services.ServerDataService;
 import org.ejectfb.minecraftserverwebhandler.services.ServerService;
@@ -28,6 +29,9 @@ public class ServerController {
     private int pollIntervalHours = 3;
 
     @Autowired
+    private ServerProperties serverProperties;
+
+    @Autowired
     public ServerController(ServerService serverService,
                             ServerDataService serverDataService,
                             TelegramBotService telegramBotService,
@@ -36,6 +40,16 @@ public class ServerController {
         this.serverDataService = serverDataService;
         this.telegramBotService = telegramBotService;
         this.messagingTemplate = messagingTemplate;
+    }
+
+    @GetMapping("/settings/default")
+    public Map<String, Object> getDefaultSettings() {
+        Map<String, Object> settings = new HashMap<>();
+        settings.put("xmx", serverProperties.getMemory().getXmx());
+        settings.put("xms", serverProperties.getMemory().getXms());
+        settings.put("jar", serverProperties.getJar());
+        settings.put("pollInterval", serverProperties.getStatsPollInterval());
+        return settings;
     }
 
     @PostMapping("/start")
