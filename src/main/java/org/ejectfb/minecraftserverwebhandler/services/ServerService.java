@@ -217,4 +217,8 @@ public class ServerService {
     public String getServerCommand() {
         return this.serverCommand;
     }
+
+    public void setServerCommand(String command) {
+        this.serverCommand = command;
+    }
 }

@@ -12,6 +12,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -137,6 +139,14 @@ public class ServerController {
         serverService.sendCommand("tps");
     }
 
+    @GetMapping("/telegram/settings")
+    public ResponseEntity<Map<String, String>> getTelegramSettings() {
+        Map<String, String> settings = new HashMap<>();
+        settings.put("token", telegramBotService.getBotToken());
+        settings.put("chatId", telegramBotService.getChatId());
+        return ResponseEntity.ok(settings);
+    }
+
     @PostMapping("/telegram/test")
     public ResponseEntity<String> testTelegramConnection(
             @RequestParam String token,
@@ -180,6 +190,28 @@ public class ServerController {
     @PostMapping("/clear")
     public void clearConsole() {
         messagingTemplate.convertAndSend("/topic/console", "clear");
+    }
+
+    @PostMapping("/settings")
+    public ResponseEntity<String> saveSettings(@RequestBody Map<String, String> settings) {
+        try {
+            String command = settings.get("command");
+            int interval = Integer.parseInt(settings.get("pollInterval"));
+
+            if (interval > 0) {
+                this.pollIntervalHours = interval;
+                serverService.setPollInterval(interval);
+            }
+
+            if (command != null && !command.isEmpty()) {
+                serverService.setServerCommand(command);
+            }
+
+            return ResponseEntity.ok("Settings saved successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error saving settings: " + e.getMessage());
+        }
     }
 
     private void sendToConsole(String message) {

@@ -162,8 +162,16 @@ public class TelegramBotService {
         }
     }
 
+    public String getBotToken() {
+        return this.botToken;
+    }
+
     public void setBotToken(String botToken) {
         this.botToken = botToken;
+    }
+
+    public String getChatId() {
+        return this.chatId;
     }
 
     public void setChatId(String chatId) {
