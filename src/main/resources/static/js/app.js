@@ -13,8 +13,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const applySettingsBtn = document.getElementById('applySettingsBtn');
     const botToken = document.getElementById('botToken');
     const chatId = document.getElementById('chatId');
+    const serverPort = document.getElementById('serverPort');
+    const uiUsername = document.getElementById('uiUsername');
+    const uiPassword = document.getElementById('uiPassword');
     const testTelegramBtn = document.getElementById('testTelegramBtn');
-    document.getElementById('saveConfigBtn').addEventListener('click', saveAllSettings);
+    document.getElementById('saveConfigBtnFromTg').addEventListener('click', saveAllSettings);
+    document.getElementById('saveConfigBtnFromSettings').addEventListener('click', saveAllSettings);
 
     function initialize() {
         connect();
@@ -35,6 +39,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 initMemory.value = settings.xms;
                 serverJar.value = settings.jar;
                 pollInterval.value = settings.pollInterval;
+                serverPort.value = settings.port;
+                uiUsername.value = settings.username;
+                uiPassword.value = settings.password;
             })
             .catch(error => console.log('Error loading default settings:', error));
     }
@@ -149,17 +156,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function saveAllSettings() {
-        // Собираем все настройки
         const settings = {
             xmx: maxMemory.value,
             xms: initMemory.value,
             jar: serverJar.value,
-            pollInterval: pollInterval.value
+            pollInterval: pollInterval.value,
+            port: serverPort.value
         };
 
         const telegramSettings = {
             token: botToken.value,
             chatId: chatId.value
+        };
+
+        const securitySettings = {
+            username: uiUsername.value,
+            password: uiPassword.value
         };
 
         // Сохраняем основные настройки
@@ -186,6 +198,20 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => {
                 if (!response.ok) throw new Error('Error saving Telegram settings');
+                return response.text();
+            })
+            .then(() => {
+                // Сохраняем настройки безопасности
+                return fetch('/api/server/security/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(securitySettings)
+                });
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Error saving security settings');
                 return response.text();
             })
             .then(() => {
@@ -292,6 +318,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     applySettingsBtn.addEventListener('click', saveSettings);
+
+    testTelegramBtn.addEventListener('click', testTelegramBtn);
 
     initialize()
 });

@@ -24,7 +24,6 @@ public class Application {
 
     private static void checkAndCreateConfigFile() {
         Path configPath = Paths.get("./application.properties");
-        Path examplePath = Paths.get("./application.example.properties");
 
         try {
             if (!Files.exists(configPath)) {

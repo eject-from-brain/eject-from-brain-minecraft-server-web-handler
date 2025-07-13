@@ -52,6 +52,9 @@ public class ServerController {
         settings.put("xms", serverProperties.getMemory().getXms());
         settings.put("jar", serverProperties.getJar());
         settings.put("pollInterval", serverProperties.getStatsPollInterval());
+        settings.put("port", serverProperties.getPort());
+        settings.put("username", serverProperties.getSecurity().getUserName());
+        settings.put("password", serverProperties.getSecurity().getUserPassword());
         return settings;
     }
 
@@ -229,6 +232,9 @@ public class ServerController {
                 serverProperties.setStatsPollInterval(interval);
                 serverService.setPollInterval(interval);
             }
+            if (settings.containsKey("port")) {
+                serverProperties.setPort(Integer.parseInt(settings.get("port")));
+            }
 
             return ResponseEntity.ok("Settings updated successfully");
         } catch (Exception e) {
@@ -266,6 +272,22 @@ public class ServerController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error saving Telegram settings: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/security/settings")
+    public ResponseEntity<String> saveSecuritySettings(@RequestBody Map<String, String> settings) {
+        try {
+            String username = settings.get("username");
+            String password = settings.get("password");
+
+            serverProperties.getSecurity().setUserName(username);
+            serverProperties.getSecurity().setUserPassword(password);
+
+            return ResponseEntity.ok("Security settings updated");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error saving security settings: " + e.getMessage());
         }
     }
 
