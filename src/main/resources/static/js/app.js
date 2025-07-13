@@ -166,7 +166,8 @@ document.addEventListener('DOMContentLoaded', function() {
             password: password.value
         };
 
-        // Сохраняем основные настройки
+        document.body.classList.add('saving-data');
+
         fetch('/api/server/settings', {
             method: 'POST',
             headers: {
@@ -215,10 +216,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.text();
             })
             .then(message => {
-                alert('All settings saved successfully!');
                 appendToConsole(message);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
             })
             .catch(error => {
+                // Скрываем индикатор при ошибке
+                document.body.classList.remove('saving-data');
                 appendToConsole(error.message);
                 alert('Error: ' + error.message);
             });
