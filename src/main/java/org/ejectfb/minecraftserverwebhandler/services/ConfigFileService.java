@@ -21,7 +21,6 @@ public class ConfigFileService {
         Path configPath = Paths.get("./application.properties");
         Path backupPath = Paths.get("./application.properties.bak");
 
-        // Создаем backup
         if (Files.exists(configPath)) {
             Files.copy(configPath, backupPath, StandardCopyOption.REPLACE_EXISTING);
         }
@@ -30,13 +29,11 @@ public class ConfigFileService {
             String configContent = buildConfigContent();
             Files.writeString(configPath, configContent);
         } catch (IOException e) {
-            // Восстанавливаем из backup при ошибке
             if (Files.exists(backupPath)) {
                 Files.copy(backupPath, configPath, StandardCopyOption.REPLACE_EXISTING);
             }
             throw e;
         } finally {
-            // Удаляем backup
             if (Files.exists(backupPath)) {
                 Files.delete(backupPath);
             }
@@ -44,6 +41,28 @@ public class ConfigFileService {
     }
 
     private String buildConfigContent() {
+        return generateConfigContent(
+                serverProperties.getTelegram().getBotToken(),
+                serverProperties.getTelegram().getChatId(),
+                serverProperties.getPort(),
+                serverProperties.getMemory().getXmx(),
+                serverProperties.getMemory().getXms(),
+                serverProperties.getJar(),
+                serverProperties.getStatsPollInterval(),
+                serverProperties.getSecurity().getUserName(),
+                serverProperties.getSecurity().getUserPassword()
+        );
+    }
+
+    public static String generateConfigContent(String botToken,
+                                               String chatId,
+                                               int port,
+                                               int memoryXmx,
+                                               int memoryXms,
+                                               String jar,
+                                               int statsPollInterval,
+                                               String securityUserName,
+                                               String securityUserPassword) {
         return String.format("""
             # Application
             spring.application.name=minecraft-server-web-handler
@@ -66,15 +85,15 @@ public class ConfigFileService {
             # Logging
             logging.level.org.springframework.web=DEBUG
             """,
-                serverProperties.getTelegram().getBotToken(),
-                serverProperties.getTelegram().getChatId(),
-                serverProperties.getPort(),
-                serverProperties.getMemory().getXmx(),
-                serverProperties.getMemory().getXms(),
-                serverProperties.getJar(),
-                serverProperties.getStatsPollInterval(),
-                serverProperties.getSecurity().getUserName(),
-                serverProperties.getSecurity().getUserPassword()
+                botToken
+                , chatId
+                , port
+                , memoryXmx
+                , memoryXms
+                , jar
+                , statsPollInterval
+                , securityUserName
+                , securityUserPassword
         );
     }
 }

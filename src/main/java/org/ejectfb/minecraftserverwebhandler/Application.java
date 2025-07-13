@@ -1,6 +1,7 @@
 package org.ejectfb.minecraftserverwebhandler;
 
 import org.ejectfb.minecraftserverwebhandler.config.ServerProperties;
+import org.ejectfb.minecraftserverwebhandler.services.ConfigFileService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -27,26 +28,16 @@ public class Application {
 
         try {
             if (!Files.exists(configPath)) {
-                String defaultConfig = """
-                spring.application.name=minecraft-server-web-handler
-                # Telegram
-                telegram.bot.token=
-                telegram.bot.chatId=
-
-                #UI
-                server.port=8080
-                server.memory.xmx=8
-                server.memory.xms=1
-                server.jar=server.jar
-                server.stats.poll.interval=3
-
-                #Auth
-                security.user.name=admin
-                security.user.password=admin
-
-                #Other
-                logging.level.org.springframework.web=DEBUG
-                """;
+                String defaultConfig = ConfigFileService.generateConfigContent(
+                        "",
+                        "",
+                        8080,
+                        8,
+                        1,
+                        "server.jar",
+                        3,
+                        "admin",
+                        "admin");
 
                 Files.writeString(configPath, defaultConfig);
             }
