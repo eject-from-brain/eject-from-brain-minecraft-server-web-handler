@@ -1,5 +1,7 @@
 package org.ejectfb.minecraftserverwebhandler.controllers;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.ejectfb.minecraftserverwebhandler.config.SecurityConfig;
 import org.ejectfb.minecraftserverwebhandler.config.ServerProperties;
 import org.ejectfb.minecraftserverwebhandler.dto.ServerStats;
 import org.ejectfb.minecraftserverwebhandler.services.ConfigFileService;
@@ -32,6 +34,8 @@ public class ServerController {
     private ServerProperties serverProperties;
     @Autowired
     private ConfigFileService  configFileService;
+    @Autowired
+    private SecurityConfig  securityConfig;
 
     @Autowired
     public ServerController(ServerService serverService,
@@ -282,18 +286,24 @@ public class ServerController {
     }
 
     @PostMapping("/security/settings")
-    public ResponseEntity<String> saveSecuritySettings(@RequestBody Map<String, String> settings) {
+    public ResponseEntity<String> saveSecuritySettings(
+            @RequestBody Map<String, String> settings,
+            HttpServletRequest request) {
+
         try {
             String username = settings.get("username");
             String password = settings.get("password");
 
-            serverProperties.getSecurity().setUsername(username);
-            serverProperties.getSecurity().setPassword(password);
+            if (username == null || password == null) {
+                return ResponseEntity.badRequest().body("Username and password required");
+            }
 
-            return ResponseEntity.ok("Security settings updated");
+            securityConfig.updateCredentials(username, password, request);
+
+            return ResponseEntity.ok("Credentials updated successfully. Reload page!");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error saving security settings: " + e.getMessage());
+            return ResponseEntity.internalServerError()
+                    .body("Error updating credentials: " + e.getMessage());
         }
     }
 
