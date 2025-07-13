@@ -319,7 +319,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
     applySettingsBtn.addEventListener('click', saveSettings);
 
-    testTelegramBtn.addEventListener('click', testTelegramBtn);
+    testTelegramBtn.addEventListener('click', function() {
+        const token = botToken.value;
+        const chatIdValue = chatId.value;
+
+        if (!token || !chatIdValue) {
+            appendToConsole('Error: Bot token and chat ID are required');
+            return;
+        }
+
+        fetch('/api/server/telegram/test?token=' + encodeURIComponent(token) +
+            '&chatId=' + encodeURIComponent(chatIdValue), {
+            method: 'POST'
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Connection test failed');
+                return response.text();
+            })
+            .then(message => {
+                alert(message);
+                appendToConsole('Telegram connection test: ' + message);
+            })
+            .catch(error => {
+                appendToConsole('Error testing Telegram connection: ' + error.message);
+                alert('Error: ' + error.message);
+            });
+    });
 
     initialize()
 });
