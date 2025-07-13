@@ -1,5 +1,6 @@
 package org.ejectfb.minecraftserverwebhandler.services;
 
+import jakarta.annotation.PreDestroy;
 import org.ejectfb.minecraftserverwebhandler.dto.ServerStats;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,14 @@ public class ServerService {
     private int pollIntervalHours = 3;
     private Timer statsTimer;
     private String serverCommand;
+
+    @PreDestroy
+    public void cleanup() {
+        if (isServerRunning) {
+            System.out.println("Application is closing, stopping Minecraft server...");
+            stopServer();
+        }
+    }
 
 
     public ServerService(ServerDataService dataService, SimpMessagingTemplate messagingTemplate) {
@@ -216,9 +225,5 @@ public class ServerService {
 
     public String getServerCommand() {
         return this.serverCommand;
-    }
-
-    public void setServerCommand(String command) {
-        this.serverCommand = command;
     }
 }
