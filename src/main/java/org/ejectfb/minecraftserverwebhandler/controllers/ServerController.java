@@ -55,6 +55,7 @@ public class ServerController {
         settings.put("port", serverProperties.getPort());
         settings.put("username", serverProperties.getSecurity().getUserName());
         settings.put("password", serverProperties.getSecurity().getUserPassword());
+        settings.put("autoRun", serverProperties.isAutoRun());
         return settings;
     }
 

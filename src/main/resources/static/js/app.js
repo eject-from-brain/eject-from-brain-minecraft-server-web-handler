@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const botToken = document.getElementById('botToken');
     const chatId = document.getElementById('chatId');
     const serverPort = document.getElementById('serverPort');
-    const uiUsername = document.getElementById('uiUsername');
-    const uiPassword = document.getElementById('uiPassword');
+    const username = document.getElementById('username');
+    const password = document.getElementById('password');
     const autoRun = document.getElementById('autoRun');
     const testTelegramBtn = document.getElementById('testTelegramBtn');
     document.getElementById('saveConfigBtnFromTg').addEventListener('click', saveAllSettings);
@@ -25,9 +25,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function initialize() {
         connect();
         loadTelegramSettings();
+        loadDefaultSettings();
         checkServerStatus();
         updateUI();
-        loadDefaultSettings();
     }
 
     function loadDefaultSettings() {
@@ -42,8 +42,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 serverJar.value = settings.jar;
                 pollInterval.value = settings.pollInterval;
                 serverPort.value = settings.port;
-                uiUsername.value = settings.username;
-                uiPassword.value = settings.password;
+                username.value = settings.username;
+                username.value = settings.password;
                 document.getElementById('autoRun').checked = settings.autoRun || false;
             })
             .catch(error => console.log('Error loading default settings:', error));
@@ -150,8 +150,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         const securitySettings = {
-            username: uiUsername.value,
-            password: uiPassword.value
+            username: username.value,
+            password: password.value
         };
 
         // Сохраняем основные настройки

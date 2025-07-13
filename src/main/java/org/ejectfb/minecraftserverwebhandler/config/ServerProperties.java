@@ -11,11 +11,7 @@ public class ServerProperties {
     private int statsPollInterval;
     private int port;
     private boolean autoRun;
-
-    // Telegram settings
     private Telegram telegram = new Telegram();
-
-    // Security settings
     private Security security = new Security();
 
     public static class Memory {
