@@ -42,7 +42,8 @@ public class Application {
                         "server.jar",
                         3,
                         "admin",
-                        "admin");
+                        "admin",
+                        false);
                 Files.writeString(configPath, defaultConfig);
             }
         } catch (IOException e) {

@@ -50,7 +50,8 @@ public class ConfigFileService {
                 serverProperties.getJar(),
                 serverProperties.getStatsPollInterval(),
                 serverProperties.getSecurity().getUsername(),
-                serverProperties.getSecurity().getPassword()
+                serverProperties.getSecurity().getPassword(),
+                serverProperties.isAutoRun()
         );
     }
 
@@ -62,7 +63,8 @@ public class ConfigFileService {
                                                String jar,
                                                int statsPollInterval,
                                                String securityUserName,
-                                               String securityUserPassword) {
+                                               String securityUserPassword,
+                                               boolean autoRun) {
         return String.format("""
             # Application
             spring.application.name=minecraft-server-web-handler
@@ -77,7 +79,7 @@ public class ConfigFileService {
             server.memory.xms=%d
             server.jar=%s
             server.stats-poll-interval=%d
-            server.auto-run=false
+            server.auto-run=%s
             
             # Security
             security.user.username=%s
@@ -93,6 +95,7 @@ public class ConfigFileService {
                 , memoryXms
                 , jar
                 , statsPollInterval
+                , autoRun
                 , securityUserName
                 , securityUserPassword
         );
