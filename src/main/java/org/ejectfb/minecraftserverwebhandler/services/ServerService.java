@@ -109,22 +109,6 @@ public class ServerService {
         }
     }
 
-    public synchronized void restartServer() {
-        if (!isServerRunning) return;
-
-        sendToConsole("Restarting server...");
-        clearConsole();
-        stopServer();
-
-        scheduler.schedule(() -> {
-            try {
-                startServer(serverCommand);
-            } catch (IOException e) {
-                sendToConsole("Failed to restart server: " + e.getMessage());
-            }
-        }, 2, TimeUnit.SECONDS);
-    }
-
     public synchronized void sendCommand(String command) throws IOException {
         if (!isServerRunning || processWriter == null) {
             throw new IllegalStateException("Server is not running");
