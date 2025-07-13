@@ -2,6 +2,7 @@ package org.ejectfb.minecraftserverwebhandler.services;
 
 import jakarta.annotation.PreDestroy;
 import org.ejectfb.minecraftserverwebhandler.dto.ServerStats;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +36,9 @@ public class ServerService {
             stopServer();
         }
     }
+
+    @Autowired
+    private TelegramBotService telegramBotService;
 
 
     public ServerService(ServerDataService dataService, SimpMessagingTemplate messagingTemplate) {
@@ -151,6 +155,7 @@ public class ServerService {
             public void run() {
                 if (isServerRunning) {
                     sendStatsToConsole();
+                    telegramBotService.sendServerStats(getStats());
                 }
             }
         }, pollIntervalHours * 3600 * 1000L, pollIntervalHours * 3600 * 1000L);
