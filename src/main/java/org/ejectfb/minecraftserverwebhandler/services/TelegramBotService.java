@@ -96,15 +96,26 @@ public class TelegramBotService {
     }
 
     public boolean sendServerStats(ServerStats stats) {
+        String serverIp;
+        try {
+            URL externalIp = new URL("http://checkip.amazonaws.com");
+            BufferedReader in = new BufferedReader(new InputStreamReader(externalIp.openStream()));
+            serverIp = in.readLine();
+        } catch (Exception e) {
+            serverIp = "N/A";
+        }
+
         String message = String.format(
                 """
                 📊 Статистика сервера Minecraft (%s)
+                🌐 IP: %s
                 🔄 Состояние: %s
                 🧮 Память: %s
                 👥 Онлайн: %s
                 ⏱ TPS: %s
                 ⏳ Время работы: %s""",
                 stats.timestamp(),
+                serverIp,
                 stats.status().equals("Running") ? "работает" : "остановлен",
                 stats.memory(),
                 stats.onlinePlayers(),
