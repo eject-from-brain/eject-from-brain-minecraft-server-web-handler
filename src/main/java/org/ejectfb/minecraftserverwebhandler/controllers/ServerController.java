@@ -2,6 +2,7 @@ package org.ejectfb.minecraftserverwebhandler.controllers;
 
 import org.ejectfb.minecraftserverwebhandler.config.ServerProperties;
 import org.ejectfb.minecraftserverwebhandler.dto.ServerStats;
+import org.ejectfb.minecraftserverwebhandler.services.ConfigFileService;
 import org.ejectfb.minecraftserverwebhandler.services.ServerDataService;
 import org.ejectfb.minecraftserverwebhandler.services.ServerService;
 import org.ejectfb.minecraftserverwebhandler.services.TelegramBotService;
@@ -30,6 +31,8 @@ public class ServerController {
 
     @Autowired
     private ServerProperties serverProperties;
+    @Autowired
+    private ConfigFileService  configFileService;
 
     @Autowired
     public ServerController(ServerService serverService,
@@ -209,22 +212,60 @@ public class ServerController {
     @PostMapping("/settings")
     public ResponseEntity<String> saveSettings(@RequestBody Map<String, String> settings) {
         try {
-            String command = settings.get("command");
-            int interval = Integer.parseInt(settings.get("pollInterval"));
+            // Обновляем настройки памяти
+            if (settings.containsKey("xmx")) {
+                serverProperties.getMemory().setXmx(Integer.parseInt(settings.get("xmx")));
+            }
+            if (settings.containsKey("xms")) {
+                serverProperties.getMemory().setXms(Integer.parseInt(settings.get("xms")));
+            }
 
-            if (interval > 0) {
-                this.pollIntervalHours = interval;
+            // Обновляем другие настройки
+            if (settings.containsKey("jar")) {
+                serverProperties.setJar(settings.get("jar"));
+            }
+            if (settings.containsKey("pollInterval")) {
+                int interval = Integer.parseInt(settings.get("pollInterval"));
+                serverProperties.setStatsPollInterval(interval);
                 serverService.setPollInterval(interval);
             }
 
-            if (command != null && !command.isEmpty()) {
-                serverService.setServerCommand(command);
-            }
-
-            return ResponseEntity.ok("Settings saved successfully");
+            return ResponseEntity.ok("Settings updated successfully");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error saving settings: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/save-config")
+    public ResponseEntity<String> saveConfigurationToFile() {
+        try {
+            configFileService.saveConfigurationToFile();
+            return ResponseEntity.ok("Configuration saved to file successfully");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error saving configuration: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/telegram/settings")
+    public ResponseEntity<String> saveTelegramSettings(@RequestBody Map<String, String> settings) {
+        try {
+            String token = settings.get("token");
+            String chatId = settings.get("chatId");
+
+            // Обновляем свойства
+            serverProperties.getTelegram().setBotToken(token);
+            serverProperties.getTelegram().setChatId(chatId);
+
+            // Обновляем сервис Telegram
+            telegramBotService.setBotToken(token);
+            telegramBotService.setChatId(chatId);
+
+            return ResponseEntity.ok("Telegram settings updated");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error saving Telegram settings: " + e.getMessage());
         }
     }
 

@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const botToken = document.getElementById('botToken');
     const chatId = document.getElementById('chatId');
     const testTelegramBtn = document.getElementById('testTelegramBtn');
+    document.getElementById('saveConfigBtn').addEventListener('click', saveAllSettings);
 
     function initialize() {
         connect();
@@ -145,6 +146,64 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(message => appendToConsole(message))
             .catch(error => appendToConsole(error.message));
+    }
+
+    function saveAllSettings() {
+        // Собираем все настройки
+        const settings = {
+            xmx: maxMemory.value,
+            xms: initMemory.value,
+            jar: serverJar.value,
+            pollInterval: pollInterval.value
+        };
+
+        const telegramSettings = {
+            token: botToken.value,
+            chatId: chatId.value
+        };
+
+        // Сохраняем основные настройки
+        fetch('/api/server/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings)
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Error saving main settings');
+                return response.text();
+            })
+            .then(() => {
+                // Сохраняем Telegram настройки
+                return fetch('/api/server/telegram/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(telegramSettings)
+                });
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Error saving Telegram settings');
+                return response.text();
+            })
+            .then(() => {
+                // Сохраняем всё в файл
+                return fetch('/api/server/save-config', { method: 'POST' });
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Error saving configuration to file');
+                return response.text();
+            })
+            .then(message => {
+                alert('All settings saved successfully!');
+                appendToConsole(message);
+            })
+            .catch(error => {
+                appendToConsole(error.message);
+                alert('Error: ' + error.message);
+            });
     }
 
     // Event listeners
