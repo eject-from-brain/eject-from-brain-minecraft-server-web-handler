@@ -53,8 +53,6 @@ public class ServerController {
         settings.put("jar", serverProperties.getJar());
         settings.put("pollInterval", serverProperties.getStatsPollInterval());
         settings.put("port", serverProperties.getPort());
-        settings.put("username", serverProperties.getSecurity().getUserName());
-        settings.put("password", serverProperties.getSecurity().getUserPassword());
         settings.put("autoRun", serverProperties.isAutoRun());
         return settings;
     }
@@ -277,14 +275,22 @@ public class ServerController {
         }
     }
 
+    @GetMapping("/security/settings")
+    public ResponseEntity<Map<String, String>> getSecuritySettings() {
+        Map<String, String> settings = new HashMap<>();
+        settings.put("username", serverProperties.getSecurity().getUsername());
+        settings.put("password", serverProperties.getSecurity().getPassword());
+        return ResponseEntity.ok(settings);
+    }
+
     @PostMapping("/security/settings")
     public ResponseEntity<String> saveSecuritySettings(@RequestBody Map<String, String> settings) {
         try {
             String username = settings.get("username");
             String password = settings.get("password");
 
-            serverProperties.getSecurity().setUserName(username);
-            serverProperties.getSecurity().setUserPassword(password);
+            serverProperties.getSecurity().setUsername(username);
+            serverProperties.getSecurity().setPassword(password);
 
             return ResponseEntity.ok("Security settings updated");
         } catch (Exception e) {

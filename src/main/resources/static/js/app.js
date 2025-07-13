@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function initialize() {
         connect();
         loadTelegramSettings();
+        loadSecuritySettings();
         loadDefaultSettings();
         checkServerStatus();
         updateUI();
@@ -42,8 +43,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 serverJar.value = settings.jar;
                 pollInterval.value = settings.pollInterval;
                 serverPort.value = settings.port;
-                username.value = settings.username;
-                username.value = settings.password;
                 document.getElementById('autoRun').checked = settings.autoRun || false;
             })
             .catch(error => console.log('Error loading default settings:', error));
@@ -60,6 +59,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (settings.chatId) chatId.value = settings.chatId;
             })
             .catch(error => console.log('Error loading Telegram settings:', error));
+    }
+
+    function loadSecuritySettings() {
+        fetch('/api/server/security/settings')
+            .then(response => {
+                if (!response.ok) throw new Error('Error loading Security settings');
+                return response.json();
+            })
+            .then(settings => {
+                if (settings.username) username.value = settings.username;
+                if (settings.password) password.value = settings.password;
+            })
+            .catch(error => console.log('Error loading Security settings:', error));
     }
 
     let isServerRunning = false;

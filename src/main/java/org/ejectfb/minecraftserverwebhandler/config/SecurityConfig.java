@@ -1,5 +1,6 @@
 package org.ejectfb.minecraftserverwebhandler.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +19,10 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Value("${security.user.name}")
+    @Autowired
+    private ServerProperties serverProperties;
+
+    @Value("${security.user.username}")
     private String username;
 
     @Value("${security.user.password}")
@@ -58,6 +62,9 @@ public class SecurityConfig {
                 .password(passwordEncoder().encode(password))
                 .roles("USER")
                 .build();
+
+        serverProperties.getSecurity().setUsername(username);
+        serverProperties.getSecurity().setPassword(password);
 
         return new InMemoryUserDetailsManager(user);
     }

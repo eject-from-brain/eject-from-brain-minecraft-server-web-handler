@@ -49,8 +49,8 @@ public class ConfigFileService {
                 serverProperties.getMemory().getXms(),
                 serverProperties.getJar(),
                 serverProperties.getStatsPollInterval(),
-                serverProperties.getSecurity().getUserName(),
-                serverProperties.getSecurity().getUserPassword()
+                serverProperties.getSecurity().getUsername(),
+                serverProperties.getSecurity().getPassword()
         );
     }
 
@@ -80,7 +80,7 @@ public class ConfigFileService {
             server.auto-run=false
             
             # Security
-            security.user.name=%s
+            security.user.username=%s
             security.user.password=%s
             
             # Logging
