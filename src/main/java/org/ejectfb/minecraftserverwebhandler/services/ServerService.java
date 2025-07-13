@@ -204,8 +204,8 @@ public class ServerService {
         ServerStats stats = getStats();
         String statsMessage = String.format(
                 "Server Stats [%s]%nPlayers: %s%nTPS: %s%nMemory: %s%nUptime: %s",
-                stats.getTimestamp(), stats.getOnlinePlayers(),
-                stats.getTps(), stats.getMemory(), stats.getUpTime()
+                stats.timestamp(), stats.onlinePlayers(),
+                stats.tps(), stats.memory(), stats.upTime()
         );
         sendToConsole(statsMessage);
     }

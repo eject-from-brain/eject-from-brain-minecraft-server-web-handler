@@ -27,7 +27,6 @@ public class ServerController {
     private final TelegramBotService telegramBotService;
     private final SimpMessagingTemplate messagingTemplate;
     private final ScheduledExecutorService scheduler = java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
-    private int pollIntervalHours = 3;
 
     @Autowired
     private ServerProperties serverProperties;
@@ -83,7 +82,9 @@ public class ServerController {
         sendToConsole("Сервер остановлен");
 
         if (telegramBotService != null) {
-            telegramBotService.sendServerStopNotification();
+            if (!telegramBotService.sendServerStopNotification()) {
+                sendToConsole("Не удалось отправить сообщение об остановке сервера!");
+            }
         }
     }
 
@@ -195,7 +196,6 @@ public class ServerController {
     @PostMapping("/interval")
     public void setPollInterval(@RequestParam int hours) {
         if (hours > 0) {
-            this.pollIntervalHours = hours;
             serverService.setPollInterval(hours);
             sendToConsole("New poll interval: " + hours + " hours");
         }
@@ -260,11 +260,9 @@ public class ServerController {
             String token = settings.get("token");
             String chatId = settings.get("chatId");
 
-            // Обновляем свойства
             serverProperties.getTelegram().setBotToken(token);
             serverProperties.getTelegram().setChatId(chatId);
 
-            // Обновляем сервис Telegram
             telegramBotService.setBotToken(token);
             telegramBotService.setChatId(chatId);
 

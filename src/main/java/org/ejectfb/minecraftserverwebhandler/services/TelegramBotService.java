@@ -104,12 +104,12 @@ public class TelegramBotService {
                 👥 Онлайн: %s
                 ⏱ TPS: %s
                 ⏳ Время работы: %s""",
-                stats.getTimestamp(),
-                stats.getStatus().equals("Running") ? "работает" : "остановлен",
-                stats.getMemory(),
-                stats.getOnlinePlayers(),
-                stats.getTps(),
-                stats.getUpTime()
+                stats.timestamp(),
+                stats.status().equals("Running") ? "работает" : "остановлен",
+                stats.memory(),
+                stats.onlinePlayers(),
+                stats.tps(),
+                stats.upTime()
         );
         return sendMessage(message);
     }

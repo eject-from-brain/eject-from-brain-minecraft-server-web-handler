@@ -2,6 +2,7 @@ package org.ejectfb.minecraftserverwebhandler.services;
 
 import jakarta.annotation.PostConstruct;
 import org.ejectfb.minecraftserverwebhandler.dto.ServerStats;
+import org.ejectfb.minecraftserverwebhandler.utils.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -19,45 +20,23 @@ public class ServerDataService {
     private final AtomicReference<String> memory = new AtomicReference<>("N/A");
     private final AtomicLong serverStartTime = new AtomicLong(0);
     private final AtomicReference<String> uptime = new AtomicReference<>("N/A");
-    private final AtomicReference<String> lastConsoleOutput = new AtomicReference<>("");
 
     @PostConstruct
     public void init() {
         reset();
     }
 
-    public void collectStatsData(String consoleText) {
-        lastConsoleOutput.set(consoleText);
-        parseOnlinePlayers(consoleText);
-        parseTPS(consoleText);
-        parseMemory(consoleText);
-        updateUptime();
-    }
-
-    public ServerStats getStats() {
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        String timestamp = dtf.format(LocalDateTime.now());
-        String status = serverStartTime.get() > 0 ? "Running" : "Stopped";
-
-        return new ServerStats(
-                onlinePlayers.get(),
-                tps.get(),
-                memory.get(),
-                uptime.get(),
-                timestamp,
-                status
-        );
-    }
-
     public void parseConsoleLine(String line) {
         if (line.contains("There are ") && line.contains(" players online:")) {
+            onlinePlayers.set(parseOnlinePlayers(line));
             parseOnlinePlayers(line);
         } else if (line.contains("Current Memory Usage:")) {
+            memory.set(parseMemory(line));
             parseMemory(line);
         } else if (line.contains("TPS from last")) {
-            parseTPS(line);
+            tps.set(parseTPS(line));
         }
-        updateUptime();
+        uptime.set(calculateUptime());
     }
 
     public String parseOnlinePlayers(String consoleText) {
@@ -67,9 +46,7 @@ public class ServerDataService {
         for (int i = lines.length - 1; i >= 0; i--) {
             if (lines[i].contains(matchPhrase)) {
                 String result = lines[i].substring(lines[i].indexOf(matchPhrase) + matchPhrase.length());
-                String players = result.substring(0, result.indexOf(" "));
-                onlinePlayers.set(players);
-                return players;
+                return result.substring(0, result.indexOf(" "));
             }
         }
         onlinePlayers.set("N/A");
@@ -83,11 +60,9 @@ public class ServerDataService {
         for (int i = lines.length - 1; i >= 0; i--) {
             if (lines[i].contains(matchPhrase)) {
                 String memoryUsage = lines[i].substring(lines[i].indexOf(matchPhrase) + matchPhrase.length());
-                memory.set(memoryUsage.trim());
                 return memoryUsage.trim();
             }
         }
-        memory.set("N/A");
         return "N/A";
     }
 
@@ -100,9 +75,7 @@ public class ServerDataService {
                 tpsPart = tpsPart.replaceAll("[^0-9.,-]", "");
                 String[] tpsValues = tpsPart.split(",");
                 if (tpsValues.length >= 3) {
-                    String firstTps = tpsValues[0].trim();
-                    tps.set(firstTps);
-                    return firstTps;
+                    return tpsValues[0].trim();
                 }
             }
         }
@@ -112,43 +85,20 @@ public class ServerDataService {
 
     public String calculateUptime() {
         if (serverStartTime.get() == 0) {
-            uptime.set("N/A");
             return "N/A";
         }
 
         long uptimeMillis = System.currentTimeMillis() - serverStartTime.get();
-        String formatted = formatDuration(uptimeMillis);
-        uptime.set(formatted);
-        return formatted;
-    }
-
-    private void updateUptime() {
-        calculateUptime();
+        return formatDuration(uptimeMillis);
     }
 
     private String formatDuration(long millis) {
-        long seconds = millis / 1000;
-        long days = seconds / 86400;
-        seconds %= 86400;
-        long hours = seconds / 3600;
-        seconds %= 3600;
-        long minutes = seconds / 60;
-        seconds %= 60;
-
-        if (days > 0) {
-            return String.format("%dд %dч %dм %dс", days, hours, minutes, seconds);
-        } else if (hours > 0) {
-            return String.format("%dч %dм %dс", hours, minutes, seconds);
-        } else if (minutes > 0) {
-            return String.format("%dм %dс", minutes, seconds);
-        } else {
-            return String.format("%dс", seconds);
-        }
+        return StringUtils.formatDuration(millis);
     }
 
     public void setServerStartTime(long startTime) {
         this.serverStartTime.set(startTime);
-        updateUptime();
+        uptime.set(calculateUptime());
     }
 
     public void reset() {
@@ -157,28 +107,8 @@ public class ServerDataService {
         memory.set("N/A");
         uptime.set("N/A");
         serverStartTime.set(0);
-        lastConsoleOutput.set("");
     }
 
-    public String getFormattedStats() {
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        return String.format(
-                "📊 Статистика сервера Minecraft (%s)\n" +
-                        "🔄 Состояние: %s\n" +
-                        "🧮 Память: %s\n" +
-                        "👥 Онлайн: %s\n" +
-                        "⏱ TPS: %s\n" +
-                        "⏳ Время работы: %s",
-                dtf.format(LocalDateTime.now()),
-                serverStartTime.get() > 0 ? "работает" : "остановлен",
-                memory.get(),
-                onlinePlayers.get(),
-                tps.get(),
-                uptime.get()
-        );
-    }
-
-    // Геттеры
     public String getOnlinePlayers() {
         return onlinePlayers.get();
     }
@@ -193,13 +123,5 @@ public class ServerDataService {
 
     public String getUpTime() {
         return uptime.get();
-    }
-
-    public long getServerStartTime() {
-        return serverStartTime.get();
-    }
-
-    public String getLastConsoleOutput() {
-        return lastConsoleOutput.get();
     }
 }
