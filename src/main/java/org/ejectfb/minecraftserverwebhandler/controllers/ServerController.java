@@ -92,17 +92,6 @@ public class ServerController {
         }
     }
 
-    @Scheduled(fixedRate = 3 * 60 * 60 * 1000)
-    public void sendScheduledStats() {
-        if (serverService.isServerRunning()) {
-            ServerStats stats = serverService.getStats();
-            if (telegramBotService != null) {
-                telegramBotService.sendServerStats(stats);
-            }
-            sendToConsole("Scheduled stats sent to Telegram");
-        }
-    }
-
     @PostMapping("/restart")
     public void restartServer() {
         if (serverService.isServerRunning()) {

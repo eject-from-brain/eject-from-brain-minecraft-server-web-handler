@@ -154,8 +154,15 @@ public class ServerService {
             @Override
             public void run() {
                 if (isServerRunning) {
-                    sendStatsToConsole();
-                    telegramBotService.sendServerStats(getStats());
+                    try {
+                        sendCommand("list");
+                        sendCommand("tps");
+                        Thread.sleep(5000);
+                        sendStatsToConsole();
+                        telegramBotService.sendServerStats(getStats());
+                    } catch (Exception e) {
+                        sendToConsole("Ошибка при отправке статистики: " + e.getMessage());
+                    }
                 }
             }
         }, pollIntervalHours * 3600 * 1000L, pollIntervalHours * 3600 * 1000L);
@@ -214,5 +221,26 @@ public class ServerService {
 
     public String getServerCommand() {
         return this.serverCommand;
+    }
+
+    public String getServerLogs() {
+        if (!isServerRunning || serverProcess == null) {
+            return "";
+        }
+
+        try {
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(serverProcess.getInputStream(), StandardCharsets.UTF_8)
+            );
+
+            StringBuilder logs = new StringBuilder();
+            String line;
+            while (reader.ready() && (line = reader.readLine()) != null) {
+                logs.append(line).append("\n");
+            }
+            return logs.toString();
+        } catch (IOException e) {
+            return "Error reading logs: " + e.getMessage();
+        }
     }
 }
