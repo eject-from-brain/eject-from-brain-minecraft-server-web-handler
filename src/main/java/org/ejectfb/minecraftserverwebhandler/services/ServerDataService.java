@@ -27,7 +27,7 @@ public class ServerDataService {
     }
 
     public void parseConsoleLine(String line) {
-        if (line.contains("There are ") && line.contains(" players online:")) {
+        if (line.contains("There are ") && line.contains(" players online")) {
             onlinePlayers.set(parseOnlinePlayers(line));
             parseOnlinePlayers(line);
         } else if (line.contains("Current Memory Usage:")) {
