@@ -16,9 +16,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const serverPort = document.getElementById('serverPort');
     const uiUsername = document.getElementById('uiUsername');
     const uiPassword = document.getElementById('uiPassword');
+    const autoRun = document.getElementById('autoRun');
     const testTelegramBtn = document.getElementById('testTelegramBtn');
     document.getElementById('saveConfigBtnFromTg').addEventListener('click', saveAllSettings);
     document.getElementById('saveConfigBtnFromSettings').addEventListener('click', saveAllSettings);
+    document.getElementById('autoRun').checked = autoRun;
 
     function initialize() {
         connect();
@@ -42,6 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 serverPort.value = settings.port;
                 uiUsername.value = settings.username;
                 uiPassword.value = settings.password;
+                document.getElementById('autoRun').checked = settings.autoRun || false;
             })
             .catch(error => console.log('Error loading default settings:', error));
     }
@@ -131,37 +134,14 @@ document.addEventListener('DOMContentLoaded', function() {
         return `java -Xmx${xmx}G -Xms${xms}G -jar ${jar} nogui`;
     }
 
-    function saveSettings() {
-        const command = buildServerCommand();
-        if (!command) return;
-
-        const interval = pollInterval.value;
-
-        fetch('/api/server/settings', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                command: command,
-                pollInterval: interval
-            })
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Error saving settings');
-                return response.text();
-            })
-            .then(message => appendToConsole(message))
-            .catch(error => appendToConsole(error.message));
-    }
-
     function saveAllSettings() {
         const settings = {
             xmx: maxMemory.value,
             xms: initMemory.value,
             jar: serverJar.value,
             pollInterval: pollInterval.value,
-            port: serverPort.value
+            port: serverPort.value,
+            autoRun: document.getElementById('autoRun').checked
         };
 
         const telegramSettings = {
@@ -317,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    applySettingsBtn.addEventListener('click', saveSettings);
+    applySettingsBtn.addEventListener('click', saveAllSettings);
 
     testTelegramBtn.addEventListener('click', function() {
         const token = botToken.value;

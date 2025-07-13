@@ -77,6 +77,7 @@ public class ConfigFileService {
             server.memory.xms=%d
             server.jar=%s
             server.stats-poll-interval=%d
+            server.auto-run=false
             
             # Security
             security.user.name=%s

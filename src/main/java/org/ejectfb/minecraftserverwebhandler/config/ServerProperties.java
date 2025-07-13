@@ -10,6 +10,7 @@ public class ServerProperties {
     private String jar;
     private int statsPollInterval;
     private int port;
+    private boolean autoRun;
 
     // Telegram settings
     private Telegram telegram = new Telegram();
@@ -127,5 +128,13 @@ public class ServerProperties {
 
     public void setSecurity(Security security) {
         this.security = security;
+    }
+
+    public boolean isAutoRun() {
+        return autoRun;
+    }
+
+    public void setAutoRun(boolean autoRun) {
+        this.autoRun = autoRun;
     }
 }

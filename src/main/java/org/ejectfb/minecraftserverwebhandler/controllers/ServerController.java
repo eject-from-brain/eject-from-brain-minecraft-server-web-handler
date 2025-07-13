@@ -213,27 +213,28 @@ public class ServerController {
     }
 
     @PostMapping("/settings")
-    public ResponseEntity<String> saveSettings(@RequestBody Map<String, String> settings) {
+    public ResponseEntity<String> saveSettings(@RequestBody Map<String, Object> settings) {
         try {
-            // Обновляем настройки памяти
+            // Основные настройки
             if (settings.containsKey("xmx")) {
-                serverProperties.getMemory().setXmx(Integer.parseInt(settings.get("xmx")));
+                serverProperties.getMemory().setXmx(Integer.parseInt(settings.get("xmx").toString()));
             }
             if (settings.containsKey("xms")) {
-                serverProperties.getMemory().setXms(Integer.parseInt(settings.get("xms")));
+                serverProperties.getMemory().setXms(Integer.parseInt(settings.get("xms").toString()));
             }
-
-            // Обновляем другие настройки
             if (settings.containsKey("jar")) {
-                serverProperties.setJar(settings.get("jar"));
+                serverProperties.setJar(settings.get("jar").toString());
             }
             if (settings.containsKey("pollInterval")) {
-                int interval = Integer.parseInt(settings.get("pollInterval"));
+                int interval = Integer.parseInt(settings.get("pollInterval").toString());
                 serverProperties.setStatsPollInterval(interval);
                 serverService.setPollInterval(interval);
             }
             if (settings.containsKey("port")) {
-                serverProperties.setPort(Integer.parseInt(settings.get("port")));
+                serverProperties.setPort(Integer.parseInt(settings.get("port").toString()));
+            }
+            if (settings.containsKey("autoRun")) {
+                serverProperties.setAutoRun(Boolean.parseBoolean(settings.get("autoRun").toString()));
             }
 
             return ResponseEntity.ok("Settings updated successfully");

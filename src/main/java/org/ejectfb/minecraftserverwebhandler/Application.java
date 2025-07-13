@@ -1,6 +1,7 @@
 package org.ejectfb.minecraftserverwebhandler;
 
 import org.ejectfb.minecraftserverwebhandler.config.ServerProperties;
+import org.ejectfb.minecraftserverwebhandler.services.AutoRunService;
 import org.ejectfb.minecraftserverwebhandler.services.ConfigFileService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -18,14 +19,18 @@ public class Application {
     public static void main(String[] args) {
         checkAndCreateConfigFile();
         ConfigurableApplicationContext context = SpringApplication.run(Application.class, args);
+
+        AutoRunService autoRunService = context.getBean(AutoRunService.class);
+        autoRunService.autoStartIfEnabled();
+
         ServerProperties properties = context.getBean(ServerProperties.class);
         System.out.println("Loaded settings: Xmx=" + properties.getMemory().getXmx() +
-                ", Xms=" + properties.getMemory().getXms());
+                ", Xms=" + properties.getMemory().getXms() +
+                ", AutoRun=" + properties.isAutoRun());
     }
 
     private static void checkAndCreateConfigFile() {
         Path configPath = Paths.get("./application.properties");
-
         try {
             if (!Files.exists(configPath)) {
                 String defaultConfig = ConfigFileService.generateConfigContent(
@@ -38,7 +43,6 @@ public class Application {
                         3,
                         "admin",
                         "admin");
-
                 Files.writeString(configPath, defaultConfig);
             }
         } catch (IOException e) {
