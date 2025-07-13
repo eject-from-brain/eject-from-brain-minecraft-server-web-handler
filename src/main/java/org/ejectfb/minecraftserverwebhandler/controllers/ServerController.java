@@ -218,7 +218,6 @@ public class ServerController {
     @PostMapping("/settings")
     public ResponseEntity<String> saveSettings(@RequestBody Map<String, Object> settings) {
         try {
-            // Основные настройки
             if (settings.containsKey("xmx")) {
                 serverProperties.getMemory().setXmx(Integer.parseInt(settings.get("xmx").toString()));
             }

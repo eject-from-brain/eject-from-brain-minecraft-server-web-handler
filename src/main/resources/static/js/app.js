@@ -132,7 +132,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const xms = initMemory.value;
         const jar = serverJar.value;
 
-        // Basic validation
         if (!jar.endsWith('.jar')) {
             appendToConsole('Error: Server jar file must end with .jar');
             return null;
@@ -180,7 +179,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.text();
             })
             .then(() => {
-                // Сохраняем Telegram настройки
                 return fetch('/api/server/telegram/settings', {
                     method: 'POST',
                     headers: {
@@ -194,7 +192,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.text();
             })
             .then(() => {
-                // Сохраняем настройки безопасности
                 return fetch('/api/server/security/settings', {
                     method: 'POST',
                     headers: {
@@ -208,7 +205,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.text();
             })
             .then(() => {
-                // Сохраняем всё в файл
                 return fetch('/api/server/save-config', { method: 'POST' });
             })
             .then(response => {
@@ -222,14 +218,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 500);
             })
             .catch(error => {
-                // Скрываем индикатор при ошибке
                 document.body.classList.remove('saving-data');
                 appendToConsole(error.message);
                 alert('Error: ' + error.message);
             });
     }
 
-    // Event listeners
     startStopBtn.addEventListener('click', function() {
         if (isServerRunning) {
             fetch('/api/server/stop', { method: 'POST' })

@@ -77,7 +77,6 @@ public class ServerProperties {
         }
     }
 
-    // Геттеры и сеттеры для основных полей
     public Memory getMemory() {
         return memory;
     }
