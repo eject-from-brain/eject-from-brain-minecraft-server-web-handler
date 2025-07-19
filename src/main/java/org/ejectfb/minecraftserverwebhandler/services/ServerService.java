@@ -74,10 +74,8 @@ public class ServerService {
                 while ((line = reader.readLine()) != null) {
                     messagingTemplate.convertAndSend("/topic/console", line);
                     dataService.parseConsoleLine(line);
-                    if (line.contains("Stopping server") || line.contains("Closing Server")) {
-                        handleServerStopped();
-                    }
                 }
+                handleServerStopped();
             } catch (IOException e) {
                 messagingTemplate.convertAndSend("/topic/console",
                         "Error reading server output: " + e.getMessage());
@@ -172,6 +170,10 @@ public class ServerService {
         if (isServerRunning) {
             isServerRunning = false;
             sendToConsole("Server stopped");
+
+            if (!userRequestedStop && telegramBotService != null) {
+                telegramBotService.sendServerStopNotification();
+            }
 
             if (!userRequestedStop) {
                 scheduler.schedule(() -> {
