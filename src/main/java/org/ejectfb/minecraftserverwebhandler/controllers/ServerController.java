@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -68,7 +67,7 @@ public class ServerController {
             sendToConsole("Сервер запущен: " + command);
 
             if (telegramBotService != null) {
-                boolean sent = telegramBotService.sendServerStartNotification();
+                boolean sent = telegramBotService.sendServerStartingNotification();
                 return ResponseEntity.ok(sent ? "Server started with Telegram notification"
                         : "Server started but Telegram notification failed");
             }
@@ -86,9 +85,7 @@ public class ServerController {
         sendToConsole("Сервер остановлен");
 
         if (telegramBotService != null) {
-            if (!telegramBotService.sendServerStopNotification()) {
-                sendToConsole("Не удалось отправить сообщение об остановке сервера!");
-            }
+            telegramBotService.sendServerStopNotification();
         }
     }
 
@@ -97,6 +94,7 @@ public class ServerController {
         if (serverService.isServerRunning()) {
             sendToConsole("Перезапуск сервера...");
             serverService.stopServer();
+            telegramBotService.sendServerRestartNotification();
 
             scheduler.schedule(() -> {
                 try {

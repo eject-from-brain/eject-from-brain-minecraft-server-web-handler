@@ -179,6 +179,7 @@ public class ServerService {
                 scheduler.schedule(() -> {
                     try {
                         clearConsole();
+                        telegramBotService.sendServerRestartNotification();
                         startServer(serverCommand);
                     } catch (IOException e) {
                         sendToConsole("Failed to restart server: " + e.getMessage());

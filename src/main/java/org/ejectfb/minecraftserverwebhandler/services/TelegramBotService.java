@@ -83,9 +83,21 @@ public class TelegramBotService {
         }
     }
 
-    public boolean sendServerStartNotification() {
+    public boolean sendServerStartingNotification() {
+        String message = "🚀 Сервер Minecraft запуcкается...\n" +
+                "⏰ Время инициализации: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return sendMessage(message);
+    }
+
+    public boolean sendServerStartedNotification() {
         String message = "✅ Сервер Minecraft запущен\n" +
                 "⏰ Время запуска: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return sendMessage(message);
+    }
+
+    public boolean sendServerRestartNotification() {
+        String message = "🔃 Сервер Minecraft переазпускается\n" +
+                "⏰ Время перезапуска: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         return sendMessage(message);
     }
 

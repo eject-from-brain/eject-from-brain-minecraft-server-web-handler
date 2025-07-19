@@ -3,6 +3,7 @@ package org.ejectfb.minecraftserverwebhandler.services;
 import jakarta.annotation.PostConstruct;
 import org.ejectfb.minecraftserverwebhandler.dto.ServerStats;
 import org.ejectfb.minecraftserverwebhandler.utils.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -21,6 +22,9 @@ public class ServerDataService {
     private final AtomicLong serverStartTime = new AtomicLong(0);
     private final AtomicReference<String> uptime = new AtomicReference<>("N/A");
 
+    @Autowired
+    private TelegramBotService  telegramBotService;
+
     @PostConstruct
     public void init() {
         reset();
@@ -35,6 +39,8 @@ public class ServerDataService {
             parseMemory(line);
         } else if (line.contains("TPS from last")) {
             tps.set(parseTPS(line));
+        } else if (line.contains("[Server thread/INFO]: Done (")) {
+            telegramBotService.sendServerStartedNotification();
         }
         uptime.set(calculateUptime());
     }
