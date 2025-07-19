@@ -1,17 +1,14 @@
 package org.ejectfb.minecraftserverwebhandler.services;
 
 import jakarta.annotation.PostConstruct;
-import org.ejectfb.minecraftserverwebhandler.dto.ServerStats;
 import org.ejectfb.minecraftserverwebhandler.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class ServerDataService {
@@ -41,6 +38,10 @@ public class ServerDataService {
             tps.set(parseTPS(line));
         } else if (line.contains("[Server thread/INFO]: Done (")) {
             telegramBotService.sendServerStartedNotification();
+        } else if (line.contains("The user ") && line.contains(" has successfully logged in.")) {
+            telegramBotService.sendServerNewPlayerJoinedNotification(parseNewJoinedPlayer(line));
+        }else if (line.contains(" lost connection: Disconnected")) {
+            telegramBotService.sendServerPlayerLeftNotification(parsePlayerLeft(line));
         }
         uptime.set(calculateUptime());
     }
@@ -86,6 +87,25 @@ public class ServerDataService {
             }
         }
         tps.set("N/A");
+        return "N/A";
+    }
+
+    public String parseNewJoinedPlayer(String consoleText) {
+        Pattern pattern = Pattern.compile("user (\\w+) has successfully logged in.");
+        Matcher matcher = pattern.matcher(consoleText);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return "N/A";
+    }
+    public String parsePlayerLeft(String consoleText) {
+        Pattern pattern = Pattern.compile("(\\w+) lost connection: Disconnected");
+        Matcher matcher = pattern.matcher(consoleText);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
         return "N/A";
     }
 

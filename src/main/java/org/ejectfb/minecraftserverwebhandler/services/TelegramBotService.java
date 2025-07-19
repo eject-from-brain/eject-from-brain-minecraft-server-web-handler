@@ -107,6 +107,18 @@ public class TelegramBotService {
         return sendMessage(message);
     }
 
+    public boolean sendServerNewPlayerJoinedNotification(String playerName) {
+        String message = "➕ Игрок " + playerName + " присоеденился\n" +
+                "⏰ Время входа: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return sendMessage(message);
+    }
+
+    public boolean sendServerPlayerLeftNotification(String playerName) {
+        String message = "➖ Игрок " + playerName + " отключился\n" +
+                "⏰ Время выхода: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return sendMessage(message);
+    }
+
     public boolean sendServerStats(ServerStats stats) {
         String serverIp;
         try {
