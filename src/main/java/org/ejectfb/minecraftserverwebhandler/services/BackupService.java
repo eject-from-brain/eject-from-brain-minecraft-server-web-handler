@@ -1,5 +1,7 @@
 package org.ejectfb.minecraftserverwebhandler.services;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.ejectfb.minecraftserverwebhandler.config.ServerProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -9,11 +11,17 @@ import org.springframework.stereotype.Service;
 import java.io.*;
 import java.nio.file.*;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -23,6 +31,8 @@ public class BackupService {
     private final SimpMessagingTemplate messagingTemplate;
     private final ServerProperties serverProperties;
     private final ServerService serverService;
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private ScheduledFuture<?> backupTask;
 
     @Autowired
     public BackupService(SimpMessagingTemplate messagingTemplate,
@@ -33,8 +43,106 @@ public class BackupService {
         this.serverService = serverService;
     }
 
-    public synchronized void createBackup() throws IOException {
-        createBackup("manual");
+    @PostConstruct
+    public void init() {
+        startBackupScheduler();
+    }
+
+    @PreDestroy
+    public void cleanup() {
+        stopBackupScheduler();
+    }
+
+    public void startBackupScheduler() {
+        stopBackupScheduler(); // Останавливаем предыдущий таймер, если был
+
+        int backupHour = parseHourFromTime(serverProperties.getBackup().getBackupTime());
+        int backupMinute = parseMinuteFromTime(serverProperties.getBackup().getBackupTime());
+
+        // Вычисляем время до следующего срабатывания
+        long initialDelay = calculateInitialDelay(backupHour, backupMinute);
+
+        // Запускаем ежедневное выполнение
+        backupTask = scheduler.scheduleAtFixedRate(
+                this::performScheduledBackups,
+                initialDelay,
+                24 * 60 * 60 * 1000L, // 24 часа
+                TimeUnit.MILLISECONDS
+        );
+
+        sendToConsole("Backup scheduler started. Next backup at: " +
+                LocalDateTime.now().plus(initialDelay, ChronoUnit.MILLIS));
+    }
+
+    public void stopBackupScheduler() {
+        if (backupTask != null) {
+            backupTask.cancel(false);
+            sendToConsole("Backup scheduler stopped");
+        }
+    }
+
+    private void performScheduledBackups() {
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            sendToConsole("Starting scheduled backups at " + now);
+
+            // Ежедневный бэкап
+            if (serverProperties.getBackup().isDailyEnabled()) {
+                createBackup("daily");
+                cleanupOldBackups("daily", serverProperties.getBackup().getDailyMaxBackups());
+            }
+
+            // Еженедельный бэкап (в воскресенье)
+            if (serverProperties.getBackup().isWeeklyEnabled() && now.getDayOfWeek() == DayOfWeek.SUNDAY) {
+                createBackup("weekly");
+                cleanupOldBackups("weekly", serverProperties.getBackup().getWeeklyMaxBackups());
+            }
+
+            // Ежемесячный бэкап (в первый день месяца)
+            if (serverProperties.getBackup().isMonthlyEnabled() && now.getDayOfMonth() == 1) {
+                createBackup("monthly");
+                cleanupOldBackups("monthly", serverProperties.getBackup().getMonthlyMaxBackups());
+            }
+
+            sendToConsole("All scheduled backups completed");
+        } catch (Exception e) {
+            sendToConsole("Error during scheduled backups: " + e.getMessage());
+        }
+    }
+
+    private long calculateInitialDelay(int targetHour, int targetMinute) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime nextRun = now.withHour(targetHour).withMinute(targetMinute).withSecond(0);
+
+        if (now.compareTo(nextRun) > 0) {
+            nextRun = nextRun.plusDays(1);
+        }
+
+        return Duration.between(now, nextRun).toMillis();
+    }
+
+    private int parseHourFromTime(String timeStr) {
+        try {
+            if (timeStr.contains(":")) { // Формат HH:mm из UI
+                return Integer.parseInt(timeStr.split(":")[0]);
+            } else { // Cron-формат "0 0 4 * * ?"
+                return Integer.parseInt(timeStr.split(" ")[2]);
+            }
+        } catch (Exception e) {
+            return 4; // Значение по умолчанию
+        }
+    }
+
+    private int parseMinuteFromTime(String timeStr) {
+        try {
+            if (timeStr.contains(":")) { // Формат HH:mm из UI
+                return Integer.parseInt(timeStr.split(":")[1]);
+            } else { // Cron-формат "0 0 4 * * ?"
+                return Integer.parseInt(timeStr.split(" ")[1]);
+            }
+        } catch (Exception e) {
+            return 0; // Значение по умолчанию
+        }
     }
 
     public synchronized void createBackup(String type) throws IOException {

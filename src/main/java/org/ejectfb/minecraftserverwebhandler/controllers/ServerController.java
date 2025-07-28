@@ -352,6 +352,7 @@ public class ServerController {
             serverProperties.getBackup().setMonthlyEnabled(Boolean.parseBoolean(settings.get("monthlyEnabled").toString()));
             serverProperties.getBackup().setMonthlyMaxBackups(Integer.parseInt(settings.get("monthlyMaxBackups").toString()));
             configFileService.saveConfigurationToFile();
+            backupService.startBackupScheduler();
             return ResponseEntity.ok("Backup settings updated successfully");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
