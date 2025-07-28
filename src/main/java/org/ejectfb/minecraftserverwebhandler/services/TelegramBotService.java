@@ -107,6 +107,43 @@ public class TelegramBotService {
         return sendMessage(message);
     }
 
+    public boolean sendServerStopingNotification() {
+        String message = "⛔ Сервер Minecraft останавливается...\n" +
+                "⏰ Время начала остановки: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return sendMessage(message);
+    }
+
+    public boolean sendServerBackupRestoringNotification(String backupName) {
+        String message = "🔋 Бэкап " + backupName + " восстанавливается..\n" +
+                "⏰ Время начала востановления бэкапа: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return sendMessage(message);
+    }
+
+    public boolean sendServerBackupRestoredNotification(String backupName) {
+        String message = "🔋 Бэкап " + backupName + " восстанволен\n" +
+                "⏰ Время востановления бэкапа: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return sendMessage(message);
+    }
+
+    public boolean sendServerBackupCreatingNotification(String backupName) {
+        String message = "🔋 Бэкап " + backupName + " создается...\n" +
+                "⏰ Время начала создания бэкапа: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return sendMessage(message);
+    }
+
+    public boolean sendServerBackupCreatedNotification(String backupName) {
+        String message = "🔋 Бэкап " + backupName + " создан\n" +
+                "⏰ Время создания бэкапа: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return sendMessage(message);
+    }
+
+    public boolean sendServerBackupCreatingFailedNotification(String errorMessage) {
+        String message = "⚠️ ЗАПУСК СЕРВЕРА ПОСЛЕ НЕУДАЧНОГО БЭКАПА! ОБРАТИТЕ ВНИМАНИЕ НА СОСТОЯНИЕ!\n" +
+                "⏰ Время создания бэкапа: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) +
+                "\n✴️ Причина: " + errorMessage;
+        return sendMessage(message);
+    }
+
     public boolean sendServerNewPlayerJoinedNotification(String playerName) {
         String message = "➕ Игрок " + playerName + " присоеденился\n" +
                 "⏰ Время входа: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));

@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -84,10 +85,6 @@ public class ServerController {
     public void stopServer() {
         serverService.stopServer();
         sendToConsole("Сервер остановлен");
-
-        if (telegramBotService != null) {
-            telegramBotService.sendServerStopNotification();
-        }
     }
 
     @PostMapping("/restart")
@@ -306,26 +303,18 @@ public class ServerController {
 
     @PostMapping("/backup/create")
     public ResponseEntity<String> createBackup() {
-        try {
-            backupService.createBackup("manual");
-            return ResponseEntity.ok("Backup created successfully");
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error creating backup: " + e.getMessage());
-        }
+        backupService.createBackup("manual");
+        return ResponseEntity.ok("Backup created successfully");
     }
 
     @PostMapping("/backup/restore")
-    public ResponseEntity<String> restoreBackup(
+    public CompletableFuture<ResponseEntity<String>> restoreBackup(
             @RequestParam String backupName,
             @RequestParam String type) {
-        try {
-            backupService.restoreBackup(backupName, type);
-            return ResponseEntity.ok("Backup restored successfully");
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error restoring backup: " + e.getMessage());
-        }
+        return backupService.restoreBackup(backupName, type)
+                .thenApply(v -> ResponseEntity.ok("Backup restored successfully"))
+                .exceptionally(e -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Error restoring backup: " + e.getMessage()));
     }
 
     @DeleteMapping("/backup/delete")

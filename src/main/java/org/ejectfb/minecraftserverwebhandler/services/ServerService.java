@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +25,8 @@ public class ServerService {
     private final SimpMessagingTemplate messagingTemplate;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private volatile boolean isServerRunning = false;
+    private volatile boolean isStopping = false;
+    private CompletableFuture<Void> serverStopFuture;
     private volatile boolean userRequestedStop = false;
     private int pollIntervalHours = 3;
     private Timer statsTimer;
@@ -94,18 +97,22 @@ public class ServerService {
     }
 
     public synchronized void stopServer() {
-        if (!isServerRunning || serverProcess == null) return;
+        if (!isServerRunning || isStopping) return;
+
+        isStopping = true;
         userRequestedStop = true;
+        serverStopFuture = new CompletableFuture<>();
 
         try {
             sendCommand("stop");
+            sendToConsole("Server stop command sent");
+            telegramBotService.sendServerStopingNotification();
+
             scheduler.schedule(() -> {
-                if (serverProcess.isAlive()) {
+                if (isServerRunning) {
                     serverProcess.destroyForcibly();
                 }
-            }, 5, TimeUnit.SECONDS);
-
-            sendToConsole("Server stop command sent");
+            }, 60, TimeUnit.SECONDS);
         } catch (IOException e) {
             sendToConsole("Error sending stop command: " + e.getMessage());
             serverProcess.destroyForcibly();
@@ -170,10 +177,13 @@ public class ServerService {
     private void handleServerStopped() {
         if (isServerRunning) {
             isServerRunning = false;
-            sendToConsole("Server stopped");
+            isStopping = false;
+            sendToConsole("Server stopped completely");
+            telegramBotService.sendServerStopNotification();
 
-            if (!userRequestedStop && telegramBotService != null) {
-                telegramBotService.sendServerStopNotification();
+            if (serverStopFuture != null) {
+                serverStopFuture.complete(null);
+                serverStopFuture = null;
             }
 
             if (!userRequestedStop) {
@@ -192,6 +202,10 @@ public class ServerService {
 
             cleanupResources();
         }
+    }
+
+    public CompletableFuture<Void> getServerStopFuture() {
+        return serverStopFuture != null ? serverStopFuture : CompletableFuture.completedFuture(null);
     }
 
     private void cleanupResources() {
@@ -228,7 +242,7 @@ public class ServerService {
     }
 
     private void handleServerOutput(String line) {
-        consoleLogService.addLog(line); // Сохраняем каждую строку вывода
+        consoleLogService.addLog(line);
         messagingTemplate.convertAndSend("/topic/console", line);
         dataService.parseConsoleLine(line);
     }

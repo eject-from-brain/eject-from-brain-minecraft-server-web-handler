@@ -2,10 +2,10 @@ package org.ejectfb.minecraftserverwebhandler.services;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.ejectfb.minecraftserverwebhandler.config.ServerProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -18,10 +18,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -33,6 +30,9 @@ public class BackupService {
     private final ServerService serverService;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> backupTask;
+
+    @Autowired
+    TelegramBotService telegramBotService;
 
     @Autowired
     public BackupService(SimpMessagingTemplate messagingTemplate,
@@ -80,29 +80,72 @@ public class BackupService {
     }
 
     private void performScheduledBackups() {
-        try {
-            LocalDateTime now = LocalDateTime.now();
-            sendToConsole("Starting scheduled backups at " + now);
+        LocalDateTime now = LocalDateTime.now();
+        sendToConsole("Starting scheduled backup procedure at " + now);
+        telegramBotService.sendMessage("⏰ Начало планового создания бэкапов");
 
-            if (serverProperties.getBackup().isDailyEnabled()) {
-                createBackup("daily");
-                cleanupOldBackups("daily", serverProperties.getBackup().getDailyMaxBackups());
-            }
+        CompletableFuture<Void> backupChain = CompletableFuture.completedFuture(null);
 
-            if (serverProperties.getBackup().isWeeklyEnabled() && now.getDayOfWeek() == DayOfWeek.SUNDAY) {
-                createBackup("weekly");
-                cleanupOldBackups("weekly", serverProperties.getBackup().getWeeklyMaxBackups());
-            }
-
-            if (serverProperties.getBackup().isMonthlyEnabled() && now.getDayOfMonth() == 1) {
-                createBackup("monthly");
-                cleanupOldBackups("monthly", serverProperties.getBackup().getMonthlyMaxBackups());
-            }
-
-            sendToConsole("All scheduled backups completed");
-        } catch (Exception e) {
-            sendToConsole("Error during scheduled backups: " + e.getMessage());
+        if (serverProperties.getBackup().isDailyEnabled()) {
+            backupChain = backupChain.thenCompose(v ->
+                    createBackup("daily")
+                            .thenRun(() -> {
+                                try {
+                                    cleanupOldBackups("daily", serverProperties.getBackup().getDailyMaxBackups());
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            })
+                            .exceptionally(e -> {
+                                sendToConsole("⚠️ Daily backup failed: " + e.getMessage());
+                                return null;
+                            })
+            );
         }
+
+        if (serverProperties.getBackup().isWeeklyEnabled() && now.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            backupChain = backupChain.thenCompose(v ->
+                    createBackup("weekly")
+                            .thenRun(() -> {
+                                try {
+                                    cleanupOldBackups("weekly", serverProperties.getBackup().getWeeklyMaxBackups());
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            })
+                            .exceptionally(e -> {
+                                sendToConsole("⚠️ Weekly backup failed: " + e.getMessage());
+                                return null;
+                            })
+            );
+        }
+
+        if (serverProperties.getBackup().isMonthlyEnabled() && now.getDayOfMonth() == 1) {
+            backupChain = backupChain.thenCompose(v ->
+                    createBackup("monthly")
+                            .thenRun(() -> {
+                                try {
+                                    cleanupOldBackups("monthly", serverProperties.getBackup().getMonthlyMaxBackups());
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            })
+                            .exceptionally(e -> {
+                                sendToConsole("⚠️ Monthly backup failed: " + e.getMessage());
+                                return null;
+                            })
+            );
+        }
+
+        backupChain
+                .thenRun(() -> {
+                    sendToConsole("All scheduled backups completed");
+                })
+                .exceptionally(e -> {
+                    sendToConsole("Some backups failed: " + e.getMessage());
+                    telegramBotService.sendMessage("⚠️ Некоторые бэкапы не были созданы: " + e.getMessage());
+                    return null;
+                });
     }
 
     private long calculateInitialDelay(int targetHour, int targetMinute) {
@@ -140,7 +183,47 @@ public class BackupService {
         }
     }
 
-    public synchronized void createBackup(String type) throws IOException {
+    public CompletableFuture<Void> createBackup(String type) {
+        CompletableFuture<Void> backupFuture = new CompletableFuture<>();
+
+        if (!serverService.isServerRunning()) {
+            try {
+                performBackupCreation(type);
+
+                backupFuture.complete(null);
+            } catch (IOException e) {
+                backupFuture.completeExceptionally(e);
+            }
+            return backupFuture;
+        }
+
+        serverService.stopServer();
+
+        serverService.getServerStopFuture().thenRunAsync(() -> {
+            try {
+                performBackupCreation(type);
+
+                telegramBotService.sendServerStartingNotification();
+                serverService.startServer(serverService.getServerCommand());
+
+                backupFuture.complete(null);
+            } catch (Exception e) {
+                handleBackupError(e, type);
+                backupFuture.completeExceptionally(e);
+
+                try {
+                    serverService.startServer(serverService.getServerCommand());
+                    telegramBotService.sendServerBackupCreatingFailedNotification(e.getMessage());
+                } catch (IOException ex) {
+                    sendToConsole("❌ Failed to restart server after backup error: " + ex.getMessage());
+                }
+            }
+        }, scheduler);
+
+        return backupFuture;
+    }
+
+    private void performBackupCreation(String type) throws IOException {
         Path serverDir = Path.of(new File(new File(serverProperties.getJar()).getPath()).getAbsoluteFile().getParent());
         Path backupDir = Paths.get(serverProperties.getBackup().getDirectory(), type).toAbsolutePath();
 
@@ -150,6 +233,7 @@ public class BackupService {
         LocalDateTime now = LocalDateTime.now();
         String timestamp = now.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String backupName = "backup_" + timestamp + ".zip";
+        telegramBotService.sendServerBackupCreatingNotification(backupName);
 
         if (!Files.exists(backupDir)) {
             Files.createDirectories(backupDir);
@@ -161,46 +245,122 @@ public class BackupService {
             Path finalServerDir = serverDir;
             Files.walk(serverDir)
                     .filter(path -> !Files.isDirectory(path))
-                    .filter(path -> {
-                        return !path.startsWith(finalBackupDir);
-                    })
+                    .filter(path -> !path.startsWith(finalBackupDir)) // Исключаем саму папку с бэкапами
                     .forEach(path -> {
                         try {
                             Path relativePath = finalServerDir.relativize(path);
-
                             zos.putNextEntry(new ZipEntry(relativePath.toString().replace("\\", "/")));
-
                             Files.copy(path, zos);
-
                             zos.closeEntry();
                         } catch (IOException e) {
-                            sendToConsole("Error adding file to backup: " + path + " - " + e.getMessage());
+                            sendToConsole("⚠️ Error adding file to backup: " + path + " - " + e.getMessage());
                         }
                     });
         }
 
         sendToConsole("Backup created: " + zipPath);
+        telegramBotService.sendServerBackupCreatedNotification(backupName);
     }
 
-    public void restoreBackup(String backupName, String type) throws IOException {
+    private void handleBackupError(Exception e, String type) {
+        sendToConsole("Backup creation failed for " + type + ": " + e.getMessage());
+        telegramBotService.sendMessage("❌ Ошибка создания бэкапа типа " + type + ": " + e.getMessage());
+
+        if (e instanceof UncheckedIOException) {
+            sendToConsole("File operation error: " + e.getCause().getMessage());
+        }
+    }
+
+    public CompletableFuture<Void> restoreBackup(String backupName, String type) {
+        CompletableFuture<Void> restoreFuture = new CompletableFuture<>();
+
+        if (serverService.isServerRunning()) {
+            telegramBotService.sendServerBackupRestoringNotification(backupName);
+            sendToConsole("Starting backup restore procedure");
+
+            serverService.stopServer();
+
+            serverService.getServerStopFuture().thenRunAsync(() -> {
+                try {
+                    performBackupRestoration(backupName, type);
+
+                    serverService.startServer(serverService.getServerCommand());
+                    telegramBotService.sendServerStartingNotification();
+
+                    restoreFuture.complete(null);
+                } catch (Exception e) {
+                    handleRestoreError(e, backupName);
+                    restoreFuture.completeExceptionally(e);
+                }
+            }, scheduler);
+        } else {
+            try {
+                performBackupRestoration(backupName, type);
+                restoreFuture.complete(null);
+            } catch (Exception e) {
+                handleRestoreError(e, backupName);
+                restoreFuture.completeExceptionally(e);
+            }
+        }
+
+        telegramBotService.sendServerStartingNotification();
+        return restoreFuture;
+    }
+
+    private void performBackupRestoration(String backupName, String type) throws IOException {
         String backupDir = serverProperties.getBackup().getDirectory() + File.separator + type;
         Path zipPath = Paths.get(backupDir, backupName);
         String serverDir = new File(new File(serverProperties.getJar()).getPath()).getAbsoluteFile().getParent();
 
-        if (serverService.isServerRunning()) {
-            serverService.stopServer();
+        if (!Files.exists(zipPath)) {
+            throw new FileNotFoundException("Backup file not found: " + zipPath);
         }
 
-        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipPath.toFile()))) {
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                Path filePath = Paths.get(serverDir, entry.getName());
-                Files.createDirectories(filePath.getParent());
-                Files.copy(zis, filePath, StandardCopyOption.REPLACE_EXISTING);
+        Path tempDir = Files.createTempDirectory("mc_restore_");
+        try {
+            try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipPath.toFile()))) {
+                ZipEntry entry;
+                while ((entry = zis.getNextEntry()) != null) {
+                    Path filePath = tempDir.resolve(entry.getName());
+                    Files.createDirectories(filePath.getParent());
+                    if (!entry.isDirectory()) {
+                        Files.copy(zis, filePath, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+            }
+
+            Files.walk(tempDir)
+                    .forEach(source -> {
+                        try {
+                            Path destination = Paths.get(serverDir, tempDir.relativize(source).toString());
+                            if (Files.isDirectory(source)) {
+                                Files.createDirectories(destination);
+                            } else {
+                                Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
+                            }
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
+
+            sendToConsole("Backup restored: " + backupName);
+            telegramBotService.sendServerBackupRestoredNotification(backupName);
+        } finally {
+            try {
+                FileUtils.deleteDirectory(tempDir.toFile());
+            } catch (IOException e) {
+                sendToConsole("Warning: Failed to delete temp directory: " + e.getMessage());
             }
         }
+    }
 
-        sendToConsole("Backup restored: " + backupName);
+    private void handleRestoreError(Exception e, String backupName) {
+        sendToConsole("Backup restore failed: " + e.getMessage());
+        telegramBotService.sendMessage("❌ Ошибка восстановления бэкапа " + backupName + ": " + e.getMessage());
+
+        if (e instanceof UncheckedIOException) {
+            sendToConsole("File operation error: " + e.getCause().getMessage());
+        }
     }
 
     public void deleteBackup(String backupName, String type) throws IOException {
@@ -236,26 +396,6 @@ public class BackupService {
                     sendToConsole("Deleted old backup: " + backups.get(i).getFileName());
                 }
             }
-        }
-    }
-
-    @Scheduled(cron = "${server.backup.backupTime:0 0 4 * * ?}")
-    public void scheduledBackup() throws IOException {
-        LocalDateTime now = LocalDateTime.now();
-
-        if (serverProperties.getBackup().isDailyEnabled()) {
-            createBackup("daily");
-            cleanupOldBackups("daily", serverProperties.getBackup().getDailyMaxBackups());
-        }
-
-        if (serverProperties.getBackup().isWeeklyEnabled() && now.getDayOfWeek() == DayOfWeek.SUNDAY) {
-            createBackup("weekly");
-            cleanupOldBackups("weekly", serverProperties.getBackup().getWeeklyMaxBackups());
-        }
-
-        if (serverProperties.getBackup().isMonthlyEnabled() && now.getDayOfMonth() == 1) {
-            createBackup("monthly");
-            cleanupOldBackups("monthly", serverProperties.getBackup().getMonthlyMaxBackups());
         }
     }
 
