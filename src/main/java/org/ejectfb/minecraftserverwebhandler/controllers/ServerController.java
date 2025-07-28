@@ -4,10 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.ejectfb.minecraftserverwebhandler.config.SecurityConfig;
 import org.ejectfb.minecraftserverwebhandler.config.ServerProperties;
 import org.ejectfb.minecraftserverwebhandler.dto.ServerStats;
-import org.ejectfb.minecraftserverwebhandler.services.ConfigFileService;
-import org.ejectfb.minecraftserverwebhandler.services.ServerDataService;
-import org.ejectfb.minecraftserverwebhandler.services.ServerService;
-import org.ejectfb.minecraftserverwebhandler.services.TelegramBotService;
+import org.ejectfb.minecraftserverwebhandler.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +33,8 @@ public class ServerController {
     private ConfigFileService  configFileService;
     @Autowired
     private SecurityConfig  securityConfig;
+    @Autowired
+    private BackupService backupService;
 
     @Autowired
     public ServerController(ServerService serverService,
@@ -290,6 +290,64 @@ public class ServerController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
                     .body("Error updating credentials: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/backup/list")
+    public ResponseEntity<List<String>> listBackups() {
+        try {
+            return ResponseEntity.ok(backupService.listBackups());
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/backup/create")
+    public ResponseEntity<String> createBackup() {
+        try {
+            backupService.createBackup();
+            return ResponseEntity.ok("Backup created successfully");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error creating backup: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/backup/restore")
+    public ResponseEntity<String> restoreBackup(@RequestParam String backupName) {
+        try {
+            backupService.restoreBackup(backupName);
+            return ResponseEntity.ok("Backup restored successfully");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error restoring backup: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/backup/settings")
+    public ResponseEntity<Map<String, Object>> getBackupSettings() {
+        Map<String, Object> settings = new HashMap<>();
+        settings.put("directory", serverProperties.getBackup().getDirectory());
+        settings.put("maxBackups", serverProperties.getBackup().getMaxBackups());
+        settings.put("backupTime", serverProperties.getBackup().getBackupTime());
+        settings.put("intervalHours", serverProperties.getBackup().getIntervalHours());
+        settings.put("enabled", serverProperties.getBackup().isEnabled());
+        return ResponseEntity.ok(settings);
+    }
+
+    @PostMapping("/backup/settings")
+    public ResponseEntity<String> saveBackupSettings(@RequestBody Map<String, Object> settings) {
+        try {
+            serverProperties.getBackup().setDirectory(settings.get("directory").toString());
+            serverProperties.getBackup().setMaxBackups(Integer.parseInt(settings.get("maxBackups").toString()));
+            serverProperties.getBackup().setBackupTime(settings.get("backupTime").toString());
+            serverProperties.getBackup().setIntervalHours(Integer.parseInt(settings.get("intervalHours").toString()));
+            serverProperties.getBackup().setEnabled(Boolean.parseBoolean(settings.get("enabled").toString()));
+            configFileService.saveConfigurationToFile();
+            return ResponseEntity.ok("Backup settings updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error saving backup settings: " + e.getMessage());
         }
     }
 

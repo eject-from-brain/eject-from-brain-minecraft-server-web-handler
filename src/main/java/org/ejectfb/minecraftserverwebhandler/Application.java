@@ -33,17 +33,34 @@ public class Application {
         Path configPath = Paths.get("./application.properties");
         try {
             if (!Files.exists(configPath)) {
-                String defaultConfig = ConfigFileService.generateConfigContent(
-                        "",
-                        "",
-                        8080,
-                        8,
-                        1,
-                        "server.jar",
-                        3,
-                        "admin",
-                        "admin",
-                        false);
+                ServerProperties serverProperties = new ServerProperties();
+
+                serverProperties.setTelegram(new ServerProperties.Telegram());
+                serverProperties.getTelegram().setBotToken("");
+                serverProperties.getTelegram().setChatId("");
+
+                serverProperties.setPort(8080);
+
+                serverProperties.setMemory(new ServerProperties.Memory());
+                serverProperties.getMemory().setXms(1);
+                serverProperties.getMemory().setXmx(8);
+
+                serverProperties.setJar("server.jar");
+                serverProperties.setStatsPollInterval(3);
+                serverProperties.setAutoRun(false);
+
+                serverProperties.setSecurity(new ServerProperties.Security());
+                serverProperties.getSecurity().setUsername("admin");
+                serverProperties.getSecurity().setPassword("admin");
+
+                serverProperties.setBackup(new ServerProperties.Backup());
+                serverProperties.getBackup().setDirectory("backups");
+                serverProperties.getBackup().setMaxBackups(5);
+                serverProperties.getBackup().setBackupTime("0 0 4 * * ?");
+                serverProperties.getBackup().setIntervalHours(24);
+                serverProperties.getBackup().setEnabled(false);
+
+                String defaultConfig = ConfigFileService.generateConfigContent(serverProperties);
                 Files.writeString(configPath, defaultConfig);
             }
         } catch (IOException e) {

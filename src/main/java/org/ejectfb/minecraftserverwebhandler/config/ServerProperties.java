@@ -13,6 +13,8 @@ public class ServerProperties {
     private boolean autoRun;
     private Telegram telegram = new Telegram();
     private Security security = new Security();
+    private Backup backup = new Backup();
+
 
     public static class Memory {
         private int xmx;
@@ -77,6 +79,25 @@ public class ServerProperties {
         }
     }
 
+    public static class Backup {
+        private String directory;
+        private int maxBackups;
+        private String backupTime;
+        private int intervalHours;
+        private boolean enabled;
+
+        public String getDirectory() { return directory; }
+        public void setDirectory(String directory) { this.directory = directory; }
+        public int getMaxBackups() { return maxBackups; }
+        public void setMaxBackups(int maxBackups) { this.maxBackups = maxBackups; }
+        public String getBackupTime() { return backupTime; }
+        public void setBackupTime(String backupTime) { this.backupTime = backupTime; }
+        public int getIntervalHours() { return intervalHours; }
+        public void setIntervalHours(int intervalHours) { this.intervalHours = intervalHours; }
+        public boolean isEnabled() { return enabled; }
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
+    }
+
     public Memory getMemory() {
         return memory;
     }
@@ -131,5 +152,13 @@ public class ServerProperties {
 
     public void setAutoRun(boolean autoRun) {
         this.autoRun = autoRun;
+    }
+
+    public Backup getBackup() {
+        return backup;
+    }
+
+    public void setBackup(Backup backup) {
+        this.backup = backup;
     }
 }

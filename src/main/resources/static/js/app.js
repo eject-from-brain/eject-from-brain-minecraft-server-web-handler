@@ -1,4 +1,14 @@
 document.addEventListener('DOMContentLoaded', function() {
+    const backupDir = document.getElementById('backupDir');
+    const maxBackups = document.getElementById('maxBackups');
+    const backupTime = document.getElementById('backupTime');
+    const backupInterval = document.getElementById('backupInterval');
+    const autoBackup = document.getElementById('autoBackup');
+    const createBackupBtn = document.getElementById('createBackupBtn');
+    const restoreBackupBtn = document.getElementById('restoreBackupBtn');
+    const backupList = document.getElementById('backupList');
+    const saveBackupSettingsBtn = document.getElementById('saveBackupSettingsBtn');
+    const browseBackupDirBtn = document.getElementById('browseBackupDirBtn');
     const consoleElement = document.getElementById('console');
     const startStopBtn = document.getElementById('startStopBtn');
     const restartBtn = document.getElementById('restartBtn');
@@ -27,8 +37,26 @@ document.addEventListener('DOMContentLoaded', function() {
         loadTelegramSettings();
         loadSecuritySettings();
         loadDefaultSettings();
+        loadBackupSettings();
         checkServerStatus();
         updateUI();
+    }
+
+    function loadBackupSettings() {
+        fetch('/api/server/backup/settings')
+            .then(response => {
+                if (!response.ok) throw new Error('Error loading backup settings');
+                return response.json();
+            })
+            .then(settings => {
+                backupDir.value = settings.directory || 'backups';
+                maxBackups.value = settings.maxBackups || 5;
+                backupTime.value = settings.backupTime || '04:00';
+                backupInterval.value = settings.intervalHours || 24;
+                autoBackup.checked = settings.enabled || false;
+                refreshBackupList();
+            })
+            .catch(error => console.log('Error loading backup settings:', error));
     }
 
     function loadDefaultSettings() {
@@ -224,6 +252,33 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
+    function refreshBackupList() {
+        fetch('/api/server/backup/list')
+            .then(response => {
+                if (!response.ok) throw new Error('Error loading backup list');
+                return response.json();
+            })
+            .then(backups => {
+                backupList.innerHTML = '';
+                if (backups.length === 0) {
+                    backupList.disabled = true;
+                    restoreBackupBtn.disabled = true;
+                    backupList.add(new Option('No backups available'));
+                } else {
+                    backupList.disabled = false;
+                    restoreBackupBtn.disabled = false;
+                    backups.forEach(backup => {
+                        backupList.add(new Option(backup));
+                    });
+                }
+            })
+            .catch(error => {
+                console.log('Error loading backup list:', error);
+                backupList.innerHTML = '';
+                backupList.add(new Option('Error loading backups'));
+            });
+    }
+
     startStopBtn.addEventListener('click', function() {
         if (isServerRunning) {
             fetch('/api/server/stop', { method: 'POST' })
@@ -335,6 +390,61 @@ document.addEventListener('DOMContentLoaded', function() {
                 appendToConsole('Error testing Telegram connection: ' + error.message);
                 alert('Error: ' + error.message);
             });
+    });
+
+    createBackupBtn.addEventListener('click', function() {
+        fetch('/api/server/backup/create', { method: 'POST' })
+            .then(response => {
+                if (!response.ok) throw new Error('Error creating backup');
+                return response.text();
+            })
+            .then(message => {
+                appendToConsole(message);
+                refreshBackupList();
+            })
+            .catch(error => appendToConsole(error.message));
+    });
+
+    restoreBackupBtn.addEventListener('click', function() {
+        const backupName = backupList.value;
+        if (!backupName) return;
+
+        if (confirm(`Are you sure you want to restore backup ${backupName}? This will overwrite current server files.`)) {
+            fetch('/api/server/backup/restore?backupName=' + encodeURIComponent(backupName), { method: 'POST' })
+                .then(response => {
+                    if (!response.ok) throw new Error('Error restoring backup');
+                    return response.text();
+                })
+                .then(message => appendToConsole(message))
+                .catch(error => appendToConsole(error.message));
+        }
+    });
+
+    saveBackupSettingsBtn.addEventListener('click', function() {
+        const settings = {
+            directory: backupDir.value,
+            maxBackups: maxBackups.value,
+            backupTime: backupTime.value,
+            intervalHours: backupInterval.value,
+            enabled: autoBackup.checked
+        };
+
+        fetch('/api/server/backup/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings)
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Error saving backup settings');
+                return response.text();
+            })
+            .then(message => {
+                appendToConsole(message);
+                refreshBackupList();
+            })
+            .catch(error => appendToConsole(error.message));
     });
 
     initialize()

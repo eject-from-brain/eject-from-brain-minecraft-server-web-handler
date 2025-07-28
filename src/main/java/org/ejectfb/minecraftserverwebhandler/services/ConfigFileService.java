@@ -41,30 +41,10 @@ public class ConfigFileService {
     }
 
     private String buildConfigContent() {
-        return generateConfigContent(
-                serverProperties.getTelegram().getBotToken(),
-                serverProperties.getTelegram().getChatId(),
-                serverProperties.getPort(),
-                serverProperties.getMemory().getXmx(),
-                serverProperties.getMemory().getXms(),
-                serverProperties.getJar(),
-                serverProperties.getStatsPollInterval(),
-                serverProperties.getSecurity().getUsername(),
-                serverProperties.getSecurity().getPassword(),
-                serverProperties.isAutoRun()
-        );
+        return generateConfigContent(serverProperties);
     }
 
-    public static String generateConfigContent(String botToken,
-                                               String chatId,
-                                               int port,
-                                               int memoryXmx,
-                                               int memoryXms,
-                                               String jar,
-                                               int statsPollInterval,
-                                               String securityUserName,
-                                               String securityUserPassword,
-                                               boolean autoRun) {
+    public static String generateConfigContent(ServerProperties serverProperties) {
         return String.format("""
             # Application
             spring.application.name=minecraft-server-web-handler
@@ -85,19 +65,31 @@ public class ConfigFileService {
             security.user.username=%s
             security.user.password=%s
             
+            # Backup
+            server.backup.directory=%s
+            server.backup.maxBackups=%d
+            server.backup.backupTime=%s
+            server.backup.intervalHours=%d
+            server.backup.enabled=%s
+            
             # Logging
             logging.level.org.springframework.web=DEBUG
             """,
-                botToken
-                , chatId
-                , port
-                , memoryXmx
-                , memoryXms
-                , jar
-                , statsPollInterval
-                , autoRun
-                , securityUserName
-                , securityUserPassword
+                serverProperties.getTelegram().getBotToken()
+                , serverProperties.getTelegram().getChatId()
+                , serverProperties.getPort()
+                , serverProperties.getMemory().getXmx()
+                , serverProperties.getMemory().getXms()
+                , serverProperties.getJar()
+                , serverProperties.getStatsPollInterval()
+                , serverProperties.isAutoRun()
+                , serverProperties.getSecurity().getUsername()
+                , serverProperties.getSecurity().getPassword()
+                , serverProperties.getBackup().getDirectory()
+                , serverProperties.getBackup().getMaxBackups()
+                , serverProperties.getBackup().getBackupTime()
+                , serverProperties.getBackup().getIntervalHours()
+                , serverProperties.getBackup().isEnabled()
         );
     }
 }
