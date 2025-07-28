@@ -203,6 +203,18 @@ public class BackupService {
         sendToConsole("Backup restored: " + backupName);
     }
 
+    public void deleteBackup(String backupName, String type) throws IOException {
+        String backupDir = serverProperties.getBackup().getDirectory() + File.separator + type;
+        Path backupPath = Paths.get(backupDir, backupName);
+
+        if (!Files.exists(backupPath)) {
+            throw new FileNotFoundException("Backup file not found: " + backupPath);
+        }
+
+        Files.delete(backupPath);
+        sendToConsole("Backup deleted: " + backupName);
+    }
+
     private void cleanupOldBackups(String type, int maxBackups) throws IOException {
         String backupDir = String.valueOf(Paths.get(serverProperties.getBackup().getDirectory(), type));
 

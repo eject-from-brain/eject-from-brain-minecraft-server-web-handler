@@ -328,6 +328,19 @@ public class ServerController {
         }
     }
 
+    @DeleteMapping("/backup/delete")
+    public ResponseEntity<String> deleteBackup(
+            @RequestParam String backupName,
+            @RequestParam String type) {
+        try {
+            backupService.deleteBackup(backupName, type);
+            return ResponseEntity.ok("Backup deleted successfully");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error deleting backup: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/backup/settings")
     public ResponseEntity<Map<String, Object>> getBackupSettings() {
         Map<String, Object> settings = new HashMap<>();

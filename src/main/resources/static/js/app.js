@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const autoBackup = document.getElementById('autoBackup');
     const createBackupBtn = document.getElementById('createBackupBtn');
     const restoreBackupBtn = document.getElementById('restoreBackupBtn');
+    const deleteBackupBtn = document.getElementById('deleteBackupBtn');
     const backupList = document.getElementById('backupList');
     const saveBackupSettingsBtn = document.getElementById('saveBackupSettingsBtn');
     const browseBackupDirBtn = document.getElementById('browseBackupDirBtn');
@@ -392,6 +393,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         document.getElementById('restoreBackupBtn').disabled = false;
+        document.getElementById('deleteBackupBtn').disabled = false;
     }
 
     startStopBtn.addEventListener('click', function() {
@@ -536,6 +538,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 .catch(error => appendToConsole(error.message));
         }
     });
+
+    deleteBackupBtn.addEventListener('click', function() {
+        if (!selectedBackup) return;
+
+        if (confirm(`Are you sure you want to delete ${selectedBackup.type} backup ${selectedBackup.name}? This action cannot be undone.`)) {
+            fetch('/api/server/backup/delete?backupName=' + encodeURIComponent(selectedBackup.name) +
+                '&type=' + encodeURIComponent(selectedBackup.type), {
+                method: 'DELETE'
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Error deleting backup');
+                    return response.text();
+                })
+                .then(message => {
+                    appendToConsole(message);
+                    refreshBackupLists();
+                    selectedBackup = null;
+                    document.getElementById('restoreBackupBtn').disabled = true;
+                    document.getElementById('deleteBackupBtn').disabled = true;
+                })
+                .catch(error => appendToConsole(error.message));
+        }
+    });
+
 
     saveBackupSettingsBtn.addEventListener('click', function() {
         const settings = {
