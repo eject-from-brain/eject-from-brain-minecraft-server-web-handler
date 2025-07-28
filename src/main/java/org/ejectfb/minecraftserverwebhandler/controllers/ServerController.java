@@ -35,7 +35,8 @@ public class ServerController {
     private SecurityConfig  securityConfig;
     @Autowired
     private BackupService backupService;
-
+    @Autowired
+    private ConsoleLogService consoleLogService;
     @Autowired
     public ServerController(ServerService serverService,
                             ServerDataService serverDataService,
@@ -199,6 +200,7 @@ public class ServerController {
 
     @PostMapping("/clear")
     public void clearConsole() {
+        consoleLogService.clearLogs();
         messagingTemplate.convertAndSend("/topic/console", "clear");
     }
 
@@ -360,7 +362,13 @@ public class ServerController {
         }
     }
 
+    @GetMapping("/logs")
+    public ResponseEntity<List<String>> getConsoleLogs() {
+        return ResponseEntity.ok(consoleLogService.getLogs());
+    }
+
     private void sendToConsole(String message) {
+        consoleLogService.addLog(message);
         messagingTemplate.convertAndSend("/topic/console", message);
     }
 }
