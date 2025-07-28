@@ -54,15 +54,13 @@ public class BackupService {
     }
 
     public void startBackupScheduler() {
-        stopBackupScheduler(); // Останавливаем предыдущий таймер, если был
+        stopBackupScheduler();
 
         int backupHour = parseHourFromTime(serverProperties.getBackup().getBackupTime());
         int backupMinute = parseMinuteFromTime(serverProperties.getBackup().getBackupTime());
 
-        // Вычисляем время до следующего срабатывания
         long initialDelay = calculateInitialDelay(backupHour, backupMinute);
 
-        // Запускаем ежедневное выполнение
         backupTask = scheduler.scheduleAtFixedRate(
                 this::performScheduledBackups,
                 initialDelay,
@@ -86,19 +84,16 @@ public class BackupService {
             LocalDateTime now = LocalDateTime.now();
             sendToConsole("Starting scheduled backups at " + now);
 
-            // Ежедневный бэкап
             if (serverProperties.getBackup().isDailyEnabled()) {
                 createBackup("daily");
                 cleanupOldBackups("daily", serverProperties.getBackup().getDailyMaxBackups());
             }
 
-            // Еженедельный бэкап (в воскресенье)
             if (serverProperties.getBackup().isWeeklyEnabled() && now.getDayOfWeek() == DayOfWeek.SUNDAY) {
                 createBackup("weekly");
                 cleanupOldBackups("weekly", serverProperties.getBackup().getWeeklyMaxBackups());
             }
 
-            // Ежемесячный бэкап (в первый день месяца)
             if (serverProperties.getBackup().isMonthlyEnabled() && now.getDayOfMonth() == 1) {
                 createBackup("monthly");
                 cleanupOldBackups("monthly", serverProperties.getBackup().getMonthlyMaxBackups());
@@ -129,7 +124,7 @@ public class BackupService {
                 return Integer.parseInt(timeStr.split(" ")[2]);
             }
         } catch (Exception e) {
-            return 4; // Значение по умолчанию
+            return 4;
         }
     }
 
@@ -141,16 +136,14 @@ public class BackupService {
                 return Integer.parseInt(timeStr.split(" ")[1]);
             }
         } catch (Exception e) {
-            return 0; // Значение по умолчанию
+            return 0;
         }
     }
 
     public synchronized void createBackup(String type) throws IOException {
-        // Получаем абсолютный путь к директории сервера
         Path serverDir = Path.of(new File(new File(serverProperties.getJar()).getPath()).getAbsoluteFile().getParent());
         Path backupDir = Paths.get(serverProperties.getBackup().getDirectory(), type).toAbsolutePath();
 
-        // Нормализуем пути для корректного сравнения
         serverDir = serverDir.normalize();
         backupDir = backupDir.normalize();
 
@@ -158,7 +151,6 @@ public class BackupService {
         String timestamp = now.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String backupName = "backup_" + timestamp + ".zip";
 
-        // Создаем директорию для бэкапов, если ее нет
         if (!Files.exists(backupDir)) {
             Files.createDirectories(backupDir);
         }
@@ -170,18 +162,14 @@ public class BackupService {
             Files.walk(serverDir)
                     .filter(path -> !Files.isDirectory(path))
                     .filter(path -> {
-                        // Исключаем файлы из самой папки бэкапов
                         return !path.startsWith(finalBackupDir);
                     })
                     .forEach(path -> {
                         try {
-                            // Получаем относительный путь файла относительно serverDir
                             Path relativePath = finalServerDir.relativize(path);
 
-                            // Создаем запись в ZIP с правильным путем
                             zos.putNextEntry(new ZipEntry(relativePath.toString().replace("\\", "/")));
 
-                            // Копируем содержимое файла
                             Files.copy(path, zos);
 
                             zos.closeEntry();
@@ -243,19 +231,16 @@ public class BackupService {
     public void scheduledBackup() throws IOException {
         LocalDateTime now = LocalDateTime.now();
 
-        // Ежедневный бэкап
         if (serverProperties.getBackup().isDailyEnabled()) {
             createBackup("daily");
             cleanupOldBackups("daily", serverProperties.getBackup().getDailyMaxBackups());
         }
 
-        // Еженедельный бэкап (в воскресенье)
         if (serverProperties.getBackup().isWeeklyEnabled() && now.getDayOfWeek() == DayOfWeek.SUNDAY) {
             createBackup("weekly");
             cleanupOldBackups("weekly", serverProperties.getBackup().getWeeklyMaxBackups());
         }
 
-        // Ежемесячный бэкап (в первый день месяца)
         if (serverProperties.getBackup().isMonthlyEnabled() && now.getDayOfMonth() == 1) {
             createBackup("monthly");
             cleanupOldBackups("monthly", serverProperties.getBackup().getMonthlyMaxBackups());

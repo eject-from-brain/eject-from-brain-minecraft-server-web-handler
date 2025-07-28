@@ -206,6 +206,33 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /*Стили раздела backup*/
+        .list-group-item {
+            background-color: var(--secondary-bg);
+            color: var(--text-muted);
+            border-color: var(--border-color);
+        }
+
+        .list-group-item strong {
+            color: var(--text-color);
+        }
+
+        .backup-item {
+            background-color: var(--secondary-bg);
+            color: var(--text-muted);
+        }
+
+        .backup-item:hover {
+            background-color: #2a2a2a;
+            color: var(--text-color);
+        }
+
+        .backup-item.active {
+            background-color: var(--accent-color);
+            color: #121212;
+        }
+
     </style>
 </head>
 <body>

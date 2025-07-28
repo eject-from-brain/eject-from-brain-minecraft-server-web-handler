@@ -29,20 +29,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const autoRun = document.getElementById('autoRun');
     const testTelegramBtn = document.getElementById('testTelegramBtn');
     const style = document.createElement('style');
-    style.textContent = `
-    .backup-item {
-        cursor: pointer;
-    }
-    .backup-item:hover {
-        background-color: var(--secondary-bg);
-        color: #a8a8a8;
-    }
-    .backup-item.active {
-        background-color: var(--accent-color);
-        color: #121212;
-    }
-`;
-    document.head.appendChild(style);
     document.getElementById('saveConfigBtnFromTg').addEventListener('click', saveAllSettings);
     document.getElementById('saveConfigBtnFromSettings').addEventListener('click', saveAllSettings);
     document.getElementById('autoRun').checked = autoRun;
@@ -275,7 +261,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const backupTreeList = document.getElementById('backupTreeList');
         backupTreeList.innerHTML = '<li class="list-group-item">Loading backups...</li>';
 
-        // Получаем все типы бэкапов
         Promise.all([
             fetch('/api/server/backup/list/daily').then(res => res.ok ? res.json() : []),
             fetch('/api/server/backup/list/weekly').then(res => res.ok ? res.json() : []),
@@ -308,7 +293,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
 
-                // Добавляем daily бэкапы
                 if (daily.length > 0) {
                     const dailyItem = document.createElement('li');
                     dailyItem.className = 'list-group-item';
@@ -332,7 +316,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
 
-                // Добавляем weekly бэкапы
                 if (weekly.length > 0) {
                     const weeklyItem = document.createElement('li');
                     weeklyItem.className = 'list-group-item';
@@ -356,7 +339,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
 
-                // Добавляем monthly бэкапы
                 if (monthly.length > 0) {
                     const monthlyItem = document.createElement('li');
                     monthlyItem.className = 'list-group-item';
