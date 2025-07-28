@@ -55,10 +55,13 @@ public class Application {
 
                 serverProperties.setBackup(new ServerProperties.Backup());
                 serverProperties.getBackup().setDirectory("backups");
-                serverProperties.getBackup().setMaxBackups(5);
                 serverProperties.getBackup().setBackupTime("0 0 4 * * ?");
-                serverProperties.getBackup().setIntervalHours(24);
-                serverProperties.getBackup().setEnabled(false);
+                serverProperties.getBackup().setDailyEnabled(true);
+                serverProperties.getBackup().setDailyMaxBackups(3);
+                serverProperties.getBackup().setWeeklyEnabled(true);
+                serverProperties.getBackup().setWeeklyMaxBackups(3);
+                serverProperties.getBackup().setMonthlyEnabled(true);
+                serverProperties.getBackup().setMonthlyMaxBackups(3);
 
                 String defaultConfig = ConfigFileService.generateConfigContent(serverProperties);
                 Files.writeString(configPath, defaultConfig);

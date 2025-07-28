@@ -85,7 +85,25 @@ public class ServerProperties {
         private String backupTime;
         private int intervalHours;
         private boolean enabled;
+        private boolean dailyEnabled;
+        private int dailyMaxBackups;
+        private boolean weeklyEnabled;
+        private int weeklyMaxBackups;
+        private boolean monthlyEnabled;
+        private int monthlyMaxBackups;
 
+        public boolean isDailyEnabled() { return dailyEnabled; }
+        public void setDailyEnabled(boolean dailyEnabled) { this.dailyEnabled = dailyEnabled; }
+        public int getDailyMaxBackups() { return dailyMaxBackups; }
+        public void setDailyMaxBackups(int dailyMaxBackups) { this.dailyMaxBackups = dailyMaxBackups; }
+        public boolean isWeeklyEnabled() { return weeklyEnabled; }
+        public void setWeeklyEnabled(boolean weeklyEnabled) { this.weeklyEnabled = weeklyEnabled; }
+        public int getWeeklyMaxBackups() { return weeklyMaxBackups; }
+        public void setWeeklyMaxBackups(int weeklyMaxBackups) { this.weeklyMaxBackups = weeklyMaxBackups; }
+        public boolean isMonthlyEnabled() { return monthlyEnabled; }
+        public void setMonthlyEnabled(boolean monthlyEnabled) { this.monthlyEnabled = monthlyEnabled; }
+        public int getMonthlyMaxBackups() { return monthlyMaxBackups; }
+        public void setMonthlyMaxBackups(int monthlyMaxBackups) { this.monthlyMaxBackups = monthlyMaxBackups; }
         public String getDirectory() { return directory; }
         public void setDirectory(String directory) { this.directory = directory; }
         public int getMaxBackups() { return maxBackups; }

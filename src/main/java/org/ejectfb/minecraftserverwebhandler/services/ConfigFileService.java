@@ -46,50 +46,56 @@ public class ConfigFileService {
 
     public static String generateConfigContent(ServerProperties serverProperties) {
         return String.format("""
-            # Application
-            spring.application.name=minecraft-server-web-handler
-            
-            # Telegram
-            telegram.bot.token=%s
-            telegram.bot.chatId=%s
-            
-            # Server
-            server.port=%d
-            server.memory.xmx=%d
-            server.memory.xms=%d
-            server.jar=%s
-            server.stats-poll-interval=%d
-            server.auto-run=%s
-            
-            # Security
-            security.user.username=%s
-            security.user.password=%s
-            
-            # Backup
-            server.backup.directory=%s
-            server.backup.maxBackups=%d
-            server.backup.backupTime=%s
-            server.backup.intervalHours=%d
-            server.backup.enabled=%s
-            
-            # Logging
-            logging.level.org.springframework.web=DEBUG
-            """,
-                serverProperties.getTelegram().getBotToken()
-                , serverProperties.getTelegram().getChatId()
-                , serverProperties.getPort()
-                , serverProperties.getMemory().getXmx()
-                , serverProperties.getMemory().getXms()
-                , serverProperties.getJar()
-                , serverProperties.getStatsPollInterval()
-                , serverProperties.isAutoRun()
-                , serverProperties.getSecurity().getUsername()
-                , serverProperties.getSecurity().getPassword()
-                , serverProperties.getBackup().getDirectory()
-                , serverProperties.getBackup().getMaxBackups()
-                , serverProperties.getBackup().getBackupTime()
-                , serverProperties.getBackup().getIntervalHours()
-                , serverProperties.getBackup().isEnabled()
+        # Application
+        spring.application.name=minecraft-server-web-handler
+        
+        # Telegram
+        telegram.bot.token=%s
+        telegram.bot.chatId=%s
+        
+        # Server
+        server.port=%d
+        server.memory.xmx=%d
+        server.memory.xms=%d
+        server.jar=%s
+        server.stats-poll-interval=%d
+        server.auto-run=%s
+        
+        # Security
+        security.user.username=%s
+        security.user.password=%s
+        
+        # Backup
+        server.backup.directory=%s
+        server.backup.backupTime=%s
+        server.backup.dailyEnabled=%s
+        server.backup.dailyMaxBackups=%d
+        server.backup.weeklyEnabled=%s
+        server.backup.weeklyMaxBackups=%d
+        server.backup.monthlyEnabled=%s
+        server.backup.monthlyMaxBackups=%d
+        
+        # Logging
+        logging.level.org.springframework.web=DEBUG
+        """,
+                serverProperties.getTelegram().getBotToken(),
+                serverProperties.getTelegram().getChatId(),
+                serverProperties.getPort(),
+                serverProperties.getMemory().getXmx(),
+                serverProperties.getMemory().getXms(),
+                serverProperties.getJar(),
+                serverProperties.getStatsPollInterval(),
+                serverProperties.isAutoRun(),
+                serverProperties.getSecurity().getUsername(),
+                serverProperties.getSecurity().getPassword(),
+                serverProperties.getBackup().getDirectory(),
+                serverProperties.getBackup().getBackupTime(),
+                serverProperties.getBackup().isDailyEnabled(),
+                serverProperties.getBackup().getDailyMaxBackups(),
+                serverProperties.getBackup().isWeeklyEnabled(),
+                serverProperties.getBackup().getWeeklyMaxBackups(),
+                serverProperties.getBackup().isMonthlyEnabled(),
+                serverProperties.getBackup().getMonthlyMaxBackups()
         );
     }
 }

@@ -293,10 +293,10 @@ public class ServerController {
         }
     }
 
-    @GetMapping("/backup/list")
-    public ResponseEntity<List<String>> listBackups() {
+    @GetMapping("/backup/list/{type}")
+    public ResponseEntity<List<String>> listBackups(@PathVariable String type) {
         try {
-            return ResponseEntity.ok(backupService.listBackups());
+            return ResponseEntity.ok(backupService.listBackups(type));
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -305,7 +305,7 @@ public class ServerController {
     @PostMapping("/backup/create")
     public ResponseEntity<String> createBackup() {
         try {
-            backupService.createBackup();
+            backupService.createBackup("manual");
             return ResponseEntity.ok("Backup created successfully");
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -314,9 +314,11 @@ public class ServerController {
     }
 
     @PostMapping("/backup/restore")
-    public ResponseEntity<String> restoreBackup(@RequestParam String backupName) {
+    public ResponseEntity<String> restoreBackup(
+            @RequestParam String backupName,
+            @RequestParam String type) {
         try {
-            backupService.restoreBackup(backupName);
+            backupService.restoreBackup(backupName, type);
             return ResponseEntity.ok("Backup restored successfully");
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -328,10 +330,13 @@ public class ServerController {
     public ResponseEntity<Map<String, Object>> getBackupSettings() {
         Map<String, Object> settings = new HashMap<>();
         settings.put("directory", serverProperties.getBackup().getDirectory());
-        settings.put("maxBackups", serverProperties.getBackup().getMaxBackups());
         settings.put("backupTime", serverProperties.getBackup().getBackupTime());
-        settings.put("intervalHours", serverProperties.getBackup().getIntervalHours());
-        settings.put("enabled", serverProperties.getBackup().isEnabled());
+        settings.put("dailyEnabled", serverProperties.getBackup().isDailyEnabled());
+        settings.put("dailyMaxBackups", serverProperties.getBackup().getDailyMaxBackups());
+        settings.put("weeklyEnabled", serverProperties.getBackup().isWeeklyEnabled());
+        settings.put("weeklyMaxBackups", serverProperties.getBackup().getWeeklyMaxBackups());
+        settings.put("monthlyEnabled", serverProperties.getBackup().isMonthlyEnabled());
+        settings.put("monthlyMaxBackups", serverProperties.getBackup().getMonthlyMaxBackups());
         return ResponseEntity.ok(settings);
     }
 
@@ -339,10 +344,13 @@ public class ServerController {
     public ResponseEntity<String> saveBackupSettings(@RequestBody Map<String, Object> settings) {
         try {
             serverProperties.getBackup().setDirectory(settings.get("directory").toString());
-            serverProperties.getBackup().setMaxBackups(Integer.parseInt(settings.get("maxBackups").toString()));
             serverProperties.getBackup().setBackupTime(settings.get("backupTime").toString());
-            serverProperties.getBackup().setIntervalHours(Integer.parseInt(settings.get("intervalHours").toString()));
-            serverProperties.getBackup().setEnabled(Boolean.parseBoolean(settings.get("enabled").toString()));
+            serverProperties.getBackup().setDailyEnabled(Boolean.parseBoolean(settings.get("dailyEnabled").toString()));
+            serverProperties.getBackup().setDailyMaxBackups(Integer.parseInt(settings.get("dailyMaxBackups").toString()));
+            serverProperties.getBackup().setWeeklyEnabled(Boolean.parseBoolean(settings.get("weeklyEnabled").toString()));
+            serverProperties.getBackup().setWeeklyMaxBackups(Integer.parseInt(settings.get("weeklyMaxBackups").toString()));
+            serverProperties.getBackup().setMonthlyEnabled(Boolean.parseBoolean(settings.get("monthlyEnabled").toString()));
+            serverProperties.getBackup().setMonthlyMaxBackups(Integer.parseInt(settings.get("monthlyMaxBackups").toString()));
             configFileService.saveConfigurationToFile();
             return ResponseEntity.ok("Backup settings updated successfully");
         } catch (Exception e) {

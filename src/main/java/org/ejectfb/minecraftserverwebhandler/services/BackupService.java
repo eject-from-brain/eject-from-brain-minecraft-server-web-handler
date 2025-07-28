@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.nio.file.*;
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -33,9 +34,13 @@ public class BackupService {
     }
 
     public synchronized void createBackup() throws IOException {
+        createBackup("manual");
+    }
+
+    public synchronized void createBackup(String type) throws IOException {
         // Получаем абсолютный путь к директории сервера
         Path serverDir = Path.of(new File(new File(serverProperties.getJar()).getPath()).getAbsoluteFile().getParent());
-        Path backupDir = Paths.get(serverProperties.getBackup().getDirectory()).toAbsolutePath();
+        Path backupDir = Paths.get(serverProperties.getBackup().getDirectory(), type).toAbsolutePath();
 
         // Нормализуем пути для корректного сравнения
         serverDir = serverDir.normalize();
@@ -79,13 +84,12 @@ public class BackupService {
         }
 
         sendToConsole("Backup created: " + zipPath);
-        cleanupOldBackups();
     }
 
-    public void restoreBackup(String backupName) throws IOException {
-        String backupDir = serverProperties.getBackup().getDirectory();
+    public void restoreBackup(String backupName, String type) throws IOException {
+        String backupDir = serverProperties.getBackup().getDirectory() + File.separator + type;
         Path zipPath = Paths.get(backupDir, backupName);
-        String serverDir = new File(serverProperties.getJar()).getParent();
+        String serverDir = new File(new File(serverProperties.getJar()).getPath()).getAbsoluteFile().getParent();
 
         if (serverService.isServerRunning()) {
             serverService.stopServer();
@@ -103,9 +107,8 @@ public class BackupService {
         sendToConsole("Backup restored: " + backupName);
     }
 
-    private void cleanupOldBackups() throws IOException {
-        String backupDir = serverProperties.getBackup().getDirectory();
-        int maxBackups = serverProperties.getBackup().getMaxBackups();
+    private void cleanupOldBackups(String type, int maxBackups) throws IOException {
+        String backupDir = String.valueOf(Paths.get(serverProperties.getBackup().getDirectory(), type));
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(backupDir), "backup_*.zip")) {
             List<Path> backups = new ArrayList<>();
@@ -129,22 +132,34 @@ public class BackupService {
     }
 
     @Scheduled(cron = "${server.backup.backupTime:0 0 4 * * ?}")
-    public void scheduledBackup() {
-        if (serverProperties.getBackup().isEnabled()) {
-            try {
-                createBackup();
-            } catch (IOException e) {
-                sendToConsole("Error during scheduled backup: " + e.getMessage());
-            }
+    public void scheduledBackup() throws IOException {
+        LocalDateTime now = LocalDateTime.now();
+
+        // Ежедневный бэкап
+        if (serverProperties.getBackup().isDailyEnabled()) {
+            createBackup("daily");
+            cleanupOldBackups("daily", serverProperties.getBackup().getDailyMaxBackups());
+        }
+
+        // Еженедельный бэкап (в воскресенье)
+        if (serverProperties.getBackup().isWeeklyEnabled() && now.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            createBackup("weekly");
+            cleanupOldBackups("weekly", serverProperties.getBackup().getWeeklyMaxBackups());
+        }
+
+        // Ежемесячный бэкап (в первый день месяца)
+        if (serverProperties.getBackup().isMonthlyEnabled() && now.getDayOfMonth() == 1) {
+            createBackup("monthly");
+            cleanupOldBackups("monthly", serverProperties.getBackup().getMonthlyMaxBackups());
         }
     }
 
-    public List<String> listBackups() throws IOException {
-        Path bacupDirPath = Path.of(serverProperties.getBackup().getDirectory());
+    public List<String> listBackups(String type) throws IOException {
+        Path backupDirPath = Path.of(serverProperties.getBackup().getDirectory(), type);
         List<String> backups = new ArrayList<>();
 
-        if(Files.exists(bacupDirPath)) {
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(bacupDirPath, "backup_*.zip")) {
+        if(Files.exists(backupDirPath)) {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(backupDirPath, "backup_*.zip")) {
                 for (Path path : stream) {
                     backups.add(path.getFileName().toString());
                 }

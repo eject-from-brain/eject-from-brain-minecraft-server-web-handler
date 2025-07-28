@@ -28,6 +28,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const password = document.getElementById('password');
     const autoRun = document.getElementById('autoRun');
     const testTelegramBtn = document.getElementById('testTelegramBtn');
+    const style = document.createElement('style');
+    style.textContent = `
+    .backup-item {
+        cursor: pointer;
+    }
+    .backup-item:hover {
+        background-color: var(--secondary-bg);
+        color: #a8a8a8;
+    }
+    .backup-item.active {
+        background-color: var(--accent-color);
+        color: #121212;
+    }
+`;
+    document.head.appendChild(style);
     document.getElementById('saveConfigBtnFromTg').addEventListener('click', saveAllSettings);
     document.getElementById('saveConfigBtnFromSettings').addEventListener('click', saveAllSettings);
     document.getElementById('autoRun').checked = autoRun;
@@ -50,11 +65,14 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(settings => {
                 backupDir.value = settings.directory || 'backups';
-                maxBackups.value = settings.maxBackups || 5;
                 backupTime.value = settings.backupTime || '04:00';
-                backupInterval.value = settings.intervalHours || 24;
-                autoBackup.checked = settings.enabled || false;
-                refreshBackupList();
+                document.getElementById('dailyBackup').checked = settings.dailyEnabled || false;
+                document.getElementById('dailyMaxBackups').value = settings.dailyMaxBackups || 7;
+                document.getElementById('weeklyBackup').checked = settings.weeklyEnabled || false;
+                document.getElementById('weeklyMaxBackups').value = settings.weeklyMaxBackups || 4;
+                document.getElementById('monthlyBackup').checked = settings.monthlyEnabled || false;
+                document.getElementById('monthlyMaxBackups').value = settings.monthlyMaxBackups || 6;
+                refreshBackupLists();
             })
             .catch(error => console.log('Error loading backup settings:', error));
     }
@@ -104,6 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let isServerRunning = false;
     let stompClient = null;
+    let selectedBackup = null;
 
     function connect() {
         const socket = new SockJS('/ws');
@@ -252,31 +271,137 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    function refreshBackupList() {
-        fetch('/api/server/backup/list')
-            .then(response => {
-                if (!response.ok) throw new Error('Error loading backup list');
-                return response.json();
-            })
-            .then(backups => {
-                backupList.innerHTML = '';
-                if (backups.length === 0) {
-                    backupList.disabled = true;
-                    restoreBackupBtn.disabled = true;
-                    backupList.add(new Option('No backups available'));
-                } else {
-                    backupList.disabled = false;
-                    restoreBackupBtn.disabled = false;
-                    backups.forEach(backup => {
-                        backupList.add(new Option(backup));
+    function refreshBackupLists() {
+        const backupTreeList = document.getElementById('backupTreeList');
+        backupTreeList.innerHTML = '<li class="list-group-item">Loading backups...</li>';
+
+        // Получаем все типы бэкапов
+        Promise.all([
+            fetch('/api/server/backup/list/daily').then(res => res.ok ? res.json() : []),
+            fetch('/api/server/backup/list/weekly').then(res => res.ok ? res.json() : []),
+            fetch('/api/server/backup/list/monthly').then(res => res.ok ? res.json() : []),
+            fetch('/api/server/backup/list/manual').then(res => res.ok ? res.json() : [])
+        ])
+            .then(([daily, weekly, monthly, manual]) => {
+                backupTreeList.innerHTML = '';
+
+                if (manual.length > 0) {
+                    const manualItem = document.createElement('li');
+                    manualItem.className = 'list-group-item';
+                    manualItem.innerHTML = `
+                <strong>Manual Backups</strong>
+                <ul class="list-group mt-2" id="manualBackups"></ul>
+            `;
+                    backupTreeList.appendChild(manualItem);
+
+                    const manualList = manualItem.querySelector('#manualBackups');
+                    manual.forEach(backup => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item backup-item';
+                        li.dataset.type = 'manual';
+                        li.dataset.name = backup;
+                        li.textContent = backup;
+                        li.addEventListener('click', function() {
+                            selectBackup(this);
+                        });
+                        manualList.appendChild(li);
                     });
+                }
+
+                // Добавляем daily бэкапы
+                if (daily.length > 0) {
+                    const dailyItem = document.createElement('li');
+                    dailyItem.className = 'list-group-item';
+                    dailyItem.innerHTML = `
+                <strong>Daily Backups</strong>
+                <ul class="list-group mt-2" id="dailyBackups"></ul>
+            `;
+                    backupTreeList.appendChild(dailyItem);
+
+                    const dailyList = dailyItem.querySelector('#dailyBackups');
+                    daily.forEach(backup => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item backup-item';
+                        li.dataset.type = 'daily';
+                        li.dataset.name = backup;
+                        li.textContent = backup;
+                        li.addEventListener('click', function() {
+                            selectBackup(this);
+                        });
+                        dailyList.appendChild(li);
+                    });
+                }
+
+                // Добавляем weekly бэкапы
+                if (weekly.length > 0) {
+                    const weeklyItem = document.createElement('li');
+                    weeklyItem.className = 'list-group-item';
+                    weeklyItem.innerHTML = `
+                <strong>Weekly Backups</strong>
+                <ul class="list-group mt-2" id="weeklyBackups"></ul>
+            `;
+                    backupTreeList.appendChild(weeklyItem);
+
+                    const weeklyList = weeklyItem.querySelector('#weeklyBackups');
+                    weekly.forEach(backup => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item backup-item';
+                        li.dataset.type = 'weekly';
+                        li.dataset.name = backup;
+                        li.textContent = backup;
+                        li.addEventListener('click', function() {
+                            selectBackup(this);
+                        });
+                        weeklyList.appendChild(li);
+                    });
+                }
+
+                // Добавляем monthly бэкапы
+                if (monthly.length > 0) {
+                    const monthlyItem = document.createElement('li');
+                    monthlyItem.className = 'list-group-item';
+                    monthlyItem.innerHTML = `
+                <strong>Monthly Backups</strong>
+                <ul class="list-group mt-2" id="monthlyBackups"></ul>
+            `;
+                    backupTreeList.appendChild(monthlyItem);
+
+                    const monthlyList = monthlyItem.querySelector('#monthlyBackups');
+                    monthly.forEach(backup => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item backup-item';
+                        li.dataset.type = 'monthly';
+                        li.dataset.name = backup;
+                        li.textContent = backup;
+                        li.addEventListener('click', function() {
+                            selectBackup(this);
+                        });
+                        monthlyList.appendChild(li);
+                    });
+                }
+
+                if (backupTreeList.children.length === 0) {
+                    backupTreeList.innerHTML = '<li class="list-group-item">No backups available</li>';
                 }
             })
             .catch(error => {
-                console.log('Error loading backup list:', error);
-                backupList.innerHTML = '';
-                backupList.add(new Option('Error loading backups'));
+                console.log('Error loading backups:', error);
+                backupTreeList.innerHTML = '<li class="list-group-item">Error loading backups</li>';
             });
+    }
+
+    function selectBackup(element) {
+        document.querySelectorAll('.backup-item').forEach(item => {
+            item.classList.remove('active');
+        });
+
+        element.classList.add('active');
+        selectedBackup = {
+            name: element.dataset.name,
+            type: element.dataset.type
+        };
+
+        document.getElementById('restoreBackupBtn').disabled = false;
     }
 
     startStopBtn.addEventListener('click', function() {
@@ -400,17 +525,19 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(message => {
                 appendToConsole(message);
-                refreshBackupList();
+                refreshBackupLists();
             })
             .catch(error => appendToConsole(error.message));
     });
 
     restoreBackupBtn.addEventListener('click', function() {
-        const backupName = backupList.value;
-        if (!backupName) return;
+        if (!selectedBackup) return;
 
-        if (confirm(`Are you sure you want to restore backup ${backupName}? This will overwrite current server files.`)) {
-            fetch('/api/server/backup/restore?backupName=' + encodeURIComponent(backupName), { method: 'POST' })
+        if (confirm(`Are you sure you want to restore ${selectedBackup.type} backup ${selectedBackup.name}? This will overwrite current server files.`)) {
+            fetch('/api/server/backup/restore?backupName=' + encodeURIComponent(selectedBackup.name) +
+                '&type=' + encodeURIComponent(selectedBackup.type), {
+                method: 'POST'
+            })
                 .then(response => {
                     if (!response.ok) throw new Error('Error restoring backup');
                     return response.text();
@@ -423,10 +550,13 @@ document.addEventListener('DOMContentLoaded', function() {
     saveBackupSettingsBtn.addEventListener('click', function() {
         const settings = {
             directory: backupDir.value,
-            maxBackups: maxBackups.value,
             backupTime: backupTime.value,
-            intervalHours: backupInterval.value,
-            enabled: autoBackup.checked
+            dailyEnabled: document.getElementById('dailyBackup').checked,
+            dailyMaxBackups: document.getElementById('dailyMaxBackups').value,
+            weeklyEnabled: document.getElementById('weeklyBackup').checked,
+            weeklyMaxBackups: document.getElementById('weeklyMaxBackups').value,
+            monthlyEnabled: document.getElementById('monthlyBackup').checked,
+            monthlyMaxBackups: document.getElementById('monthlyMaxBackups').value
         };
 
         fetch('/api/server/backup/settings', {
@@ -442,7 +572,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(message => {
                 appendToConsole(message);
-                refreshBackupList();
+                refreshBackupLists();
             })
             .catch(error => appendToConsole(error.message));
     });
