@@ -39,6 +39,8 @@ public class ServerService {
 
     @Autowired
     private TelegramBotService telegramBotService;
+    @Autowired
+    private ConsoleLogService consoleLogService;
 
 
     public ServerService(ServerDataService dataService, SimpMessagingTemplate messagingTemplate) {
@@ -72,8 +74,7 @@ public class ServerService {
 
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    messagingTemplate.convertAndSend("/topic/console", line);
-                    dataService.parseConsoleLine(line);
+                    handleServerOutput(line);
                 }
                 handleServerStopped();
             } catch (IOException e) {
@@ -224,6 +225,12 @@ public class ServerService {
 
     public String getServerCommand() {
         return this.serverCommand;
+    }
+
+    private void handleServerOutput(String line) {
+        consoleLogService.addLog(line); // Сохраняем каждую строку вывода
+        messagingTemplate.convertAndSend("/topic/console", line);
+        dataService.parseConsoleLine(line);
     }
 
     public String getServerLogs() {

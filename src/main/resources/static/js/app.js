@@ -115,6 +115,14 @@ document.addEventListener('DOMContentLoaded', function() {
         stompClient = Stomp.over(socket);
         stompClient.connect({}, function(frame) {
             console.log('Connected: ' + frame);
+            // Загружаем историю логов при подключении
+            fetch('/api/server/logs')
+                .then(response => response.json())
+                .then(logs => {
+                    consoleElement.innerHTML = '';
+                    logs.forEach(log => appendToConsole(log));
+                });
+
             stompClient.subscribe('/topic/console', function(message) {
                 if (message.body === "clear") {
                     consoleElement.innerHTML = '';
