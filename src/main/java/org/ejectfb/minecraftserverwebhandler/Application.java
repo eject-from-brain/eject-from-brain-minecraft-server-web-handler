@@ -30,7 +30,7 @@ public class Application {
     }
 
     private static void checkAndCreateConfigFile() {
-        Path configPath = Paths.get("./application.properties");
+        Path configPath = Paths.get("./application.yml");
         try {
             if (!Files.exists(configPath)) {
                 ServerProperties serverProperties = new ServerProperties();
@@ -57,7 +57,7 @@ public class Application {
                 serverProperties.getBackup().setEnabled(true);
                 serverProperties.getBackup().setEnableRestartNotifications(true);
                 serverProperties.getBackup().setNotificationTemplate("Server will restart in {time} for scheduled maintenance");
-                serverProperties.getBackup().setNotificationTimes("server.backup.notificationTimes=3h,2h,1h,30m,15m,5m,3m,2m,1m");
+                serverProperties.getBackup().setNotificationTimes("3h,2h,1h,30m,15m,5m,3m,2m,1m");
                 serverProperties.getBackup().setDirectory("backups");
                 serverProperties.getBackup().setBackupTime("05:00");
                 serverProperties.getBackup().setDailyEnabled(true);
@@ -67,7 +67,8 @@ public class Application {
                 serverProperties.getBackup().setMonthlyEnabled(true);
                 serverProperties.getBackup().setMonthlyMaxBackups(3);
 
-                String defaultConfig = ConfigFileService.generateConfigContent(serverProperties);
+                ConfigFileService configFileService = new ConfigFileService(serverProperties);
+                String defaultConfig = configFileService.buildConfigContent();
                 Files.writeString(configPath, defaultConfig);
             }
         } catch (IOException e) {

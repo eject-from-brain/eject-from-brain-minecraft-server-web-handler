@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: minecraft-server-web-handler
+
+# Telegram
+telegram:
+  bot:
+    token: ""
+    chatId: ""
+
+# UI
+server:
+  port: 8080
+  memory:
+    xmx: 8
+    xms: 8
+  jar: "server.jar"
+  stats-poll-interval: 3
+  auto-run: false
+  backup:
+    enabled: true
+    enableRestartNotifications: true
+    directory: "backups"
+    notificationTemplate: "Server will restart in {time} for scheduled maintenance"
+    notificationTimes: "3h,2h,1h,30m,15m,5m,3m,2m,1m"
+    backupTime: "05:00"
+    dailyEnabled: true
+    dailyMaxBackups: 3
+    weeklyEnabled: true
+    weeklyMaxBackups: 3
+    monthlyEnabled: true
+    monthlyMaxBackups: 3
+
+# Auth
+security:
+  user:
+    username: "admin"
+    password: "admin"
+
+# Other
+logging:
+  level:
+    org:
+      springframework:
+        web: DEBUG
