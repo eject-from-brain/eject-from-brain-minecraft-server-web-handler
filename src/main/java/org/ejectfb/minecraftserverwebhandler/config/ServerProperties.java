@@ -80,17 +80,18 @@ public class ServerProperties {
     }
 
     public static class Backup {
-        private String directory;
-        private int maxBackups;
-        private String backupTime;
-        private int intervalHours;
         private boolean enabled;
+        private String directory;
+        private String backupTime;
         private boolean dailyEnabled;
         private int dailyMaxBackups;
         private boolean weeklyEnabled;
         private int weeklyMaxBackups;
         private boolean monthlyEnabled;
         private int monthlyMaxBackups;
+        private boolean enableRestartNotifications;
+        private String notificationTemplate;
+        private String notificationTimes;
 
         public boolean isDailyEnabled() { return dailyEnabled; }
         public void setDailyEnabled(boolean dailyEnabled) { this.dailyEnabled = dailyEnabled; }
@@ -106,14 +107,16 @@ public class ServerProperties {
         public void setMonthlyMaxBackups(int monthlyMaxBackups) { this.monthlyMaxBackups = monthlyMaxBackups; }
         public String getDirectory() { return directory; }
         public void setDirectory(String directory) { this.directory = directory; }
-        public int getMaxBackups() { return maxBackups; }
-        public void setMaxBackups(int maxBackups) { this.maxBackups = maxBackups; }
         public String getBackupTime() { return backupTime; }
         public void setBackupTime(String backupTime) { this.backupTime = backupTime; }
-        public int getIntervalHours() { return intervalHours; }
-        public void setIntervalHours(int intervalHours) { this.intervalHours = intervalHours; }
         public boolean isEnabled() { return enabled; }
         public void setEnabled(boolean enabled) { this.enabled = enabled; }
+        public boolean isEnableRestartNotifications() {return enableRestartNotifications;}
+        public void setEnableRestartNotifications(boolean enableRestartNotifications) {this.enableRestartNotifications = enableRestartNotifications;}
+        public String getNotificationTemplate() {return notificationTemplate;}
+        public void setNotificationTemplate(String notificationTemplate) {this.notificationTemplate = notificationTemplate;}
+        public String getNotificationTimes() {return notificationTimes;}
+        public void setNotificationTimes(String notificationTimes) {this.notificationTimes = notificationTimes;}
     }
 
     public Memory getMemory() {

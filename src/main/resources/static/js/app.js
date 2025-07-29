@@ -33,6 +33,19 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('saveConfigBtnFromTg').addEventListener('click', saveAllSettings);
     document.getElementById('saveConfigBtnFromSettings').addEventListener('click', saveAllSettings);
     document.getElementById('autoRun').checked = autoRun;
+    document.getElementById('notificationTimes').addEventListener('blur', function() {
+        const times = this.value.split(',');
+        const validFormat = /^(\d+[hm])$/i;
+
+        for (let time of times) {
+            time = time.trim();
+            if (!validFormat.test(time)) {
+                alert(`Invalid time format: ${time}. Please use format like "3h" or "30m"`);
+                this.focus();
+                return;
+            }
+        }
+    });
 
     function initialize() {
         connect();
@@ -51,15 +64,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(settings => {
+                document.getElementById('enableRestartForBackup').checked = settings.enabled || false;
+                document.getElementById('enableRestartNotifications').checked = settings.notificationsEnabled || false;
+                document.getElementById('notificationTemplate').value = settings.notificationTemplate || 'Server will restart in {time} for scheduled maintenance';
+                document.getElementById('notificationTimes').value = settings.notificationTimes || '3h,2h,1h,30m,15m,5m,3m,2m,1m';
                 backupDir.value = settings.directory || 'backups';
                 backupTime.value = settings.backupTime || '04:00';
-                document.getElementById('enableRestartForBackup').checked = settings.enabled || false;
                 document.getElementById('dailyBackup').checked = settings.dailyEnabled || false;
-                document.getElementById('dailyMaxBackups').value = settings.dailyMaxBackups || 7;
+                document.getElementById('dailyMaxBackups').value = settings.dailyMaxBackups || 1;
                 document.getElementById('weeklyBackup').checked = settings.weeklyEnabled || false;
-                document.getElementById('weeklyMaxBackups').value = settings.weeklyMaxBackups || 4;
+                document.getElementById('weeklyMaxBackups').value = settings.weeklyMaxBackups || 1;
                 document.getElementById('monthlyBackup').checked = settings.monthlyEnabled || false;
-                document.getElementById('monthlyMaxBackups').value = settings.monthlyMaxBackups || 6;
+                document.getElementById('monthlyMaxBackups').value = settings.monthlyMaxBackups || 1;
+
                 refreshBackupLists();
             })
             .catch(error => console.log('Error loading backup settings:', error));
@@ -567,6 +584,9 @@ document.addEventListener('DOMContentLoaded', function() {
     saveBackupSettingsBtn.addEventListener('click', function() {
         const settings = {
             enabled: document.getElementById('enableRestartForBackup').checked,
+            notificationsEnabled: document.getElementById('enableRestartNotifications').checked,
+            notificationTimes: document.getElementById('notificationTimes').value,
+            notificationTemplate: document.getElementById('notificationTemplate').value,
             directory: backupDir.value,
             backupTime: backupTime.value,
             dailyEnabled: document.getElementById('dailyBackup').checked,

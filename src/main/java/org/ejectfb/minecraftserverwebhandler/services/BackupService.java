@@ -30,6 +30,7 @@ public class BackupService {
     private final ServerService serverService;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> backupTask;
+    private final List<ScheduledFuture<?>> notificationTasks = new ArrayList<>();
 
     @Autowired
     TelegramBotService telegramBotService;
@@ -50,6 +51,7 @@ public class BackupService {
 
     @PreDestroy
     public void cleanup() {
+        cancelPendingNotifications();
         stopBackupScheduler();
     }
 
@@ -418,6 +420,60 @@ public class BackupService {
             backups.sort(Comparator.reverseOrder());
         }
         return backups;
+    }
+
+    public void scheduleRestartNotifications(LocalDateTime restartTime) {
+        cancelPendingNotifications();
+
+        if (!serverProperties.getBackup().isEnableRestartNotifications() ||
+                !serverProperties.getBackup().isEnabled()) {
+            return;
+        }
+
+        String[] times = serverProperties.getBackup().getNotificationTimes().split(",");
+        String template = serverProperties.getBackup().getNotificationTemplate();
+
+        for (String timeStr : times) {
+            timeStr = timeStr.trim();
+            try {
+                long delay = parseTimeToMillis(timeStr);
+                if (delay > 0) {
+                    String finalTimeStr = timeStr;
+                    ScheduledFuture<?> task = scheduler.schedule(() -> {
+                                try {
+                                    String message = template.replace("{time}", finalTimeStr);
+                                    serverService.sendCommand("say " + message);
+                                } catch (IOException e) {
+                                    sendToConsole("Error sending notification: " + e.getMessage());
+                                }
+                            }, Duration.between(LocalDateTime.now(), restartTime).toMillis() - delay,
+                            TimeUnit.MILLISECONDS);
+
+                    notificationTasks.add(task);
+                }
+            } catch (Exception e) {
+                sendToConsole("Invalid notification time format: " + timeStr);
+            }
+        }
+    }
+
+    private void cancelPendingNotifications() {
+        for (ScheduledFuture<?> task : notificationTasks) {
+            if (!task.isDone()) {
+                task.cancel(false);
+            }
+        }
+        notificationTasks.clear();
+    }
+
+    private long parseTimeToMillis(String timeStr) throws Exception {
+        timeStr = timeStr.toLowerCase();
+        if (timeStr.endsWith("h")) {
+            return Long.parseLong(timeStr.substring(0, timeStr.length() - 1)) * 3600 * 1000;
+        } else if (timeStr.endsWith("m")) {
+            return Long.parseLong(timeStr.substring(0, timeStr.length() - 1)) * 60 * 1000;
+        }
+        throw new Exception("Invalid time format - use 'h' for hours or 'm' for minutes");
     }
 
     private void sendToConsole(String message) {

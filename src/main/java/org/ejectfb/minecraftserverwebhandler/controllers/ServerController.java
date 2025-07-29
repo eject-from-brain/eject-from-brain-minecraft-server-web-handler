@@ -12,6 +12,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -333,6 +335,10 @@ public class ServerController {
     @GetMapping("/backup/settings")
     public ResponseEntity<Map<String, Object>> getBackupSettings() {
         Map<String, Object> settings = new HashMap<>();
+        settings.put("enabled", serverProperties.getBackup().isEnabled());
+        settings.put("notificationsEnabled", serverProperties.getBackup().isEnableRestartNotifications());
+        settings.put("notificationTemplate", serverProperties.getBackup().getNotificationTemplate());
+        settings.put("notificationTimes", serverProperties.getBackup().getNotificationTimes());
         settings.put("directory", serverProperties.getBackup().getDirectory());
         settings.put("backupTime", serverProperties.getBackup().getBackupTime());
         settings.put("dailyEnabled", serverProperties.getBackup().isDailyEnabled());
@@ -348,6 +354,9 @@ public class ServerController {
     public ResponseEntity<String> saveBackupSettings(@RequestBody Map<String, Object> settings) {
         try {
             serverProperties.getBackup().setEnabled(Boolean.parseBoolean(settings.get("enabled").toString()));
+            serverProperties.getBackup().setEnableRestartNotifications(Boolean.parseBoolean(settings.get("notificationsEnabled").toString()));
+            serverProperties.getBackup().setNotificationTemplate(settings.get("notificationTemplate").toString());
+            serverProperties.getBackup().setNotificationTimes(settings.get("notificationTimes").toString());
             serverProperties.getBackup().setDirectory(settings.get("directory").toString());
             serverProperties.getBackup().setBackupTime(settings.get("backupTime").toString());
             serverProperties.getBackup().setDailyEnabled(Boolean.parseBoolean(settings.get("dailyEnabled").toString()));
@@ -358,11 +367,26 @@ public class ServerController {
             serverProperties.getBackup().setMonthlyMaxBackups(Integer.parseInt(settings.get("monthlyMaxBackups").toString()));
             configFileService.saveConfigurationToFile();
             backupService.startBackupScheduler();
+            if (serverProperties.getBackup().isEnabled()) {
+                String backupTimeStr = serverProperties.getBackup().getBackupTime();
+                LocalTime backupTime = LocalTime.parse(backupTimeStr);
+                LocalDateTime nextRestart = calculateNextRestartTime(backupTime);
+                backupService.scheduleRestartNotifications(nextRestart);
+            }
             return ResponseEntity.ok("Backup settings updated successfully");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error saving backup settings: " + e.getMessage());
         }
+    }
+
+    private LocalDateTime calculateNextRestartTime(LocalTime backupTime) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime nextRestart = LocalDateTime.of(now.toLocalDate(), backupTime);
+        if (now.isAfter(nextRestart)) {
+            nextRestart = nextRestart.plusDays(1);
+        }
+        return nextRestart;
     }
 
     @GetMapping("/logs")

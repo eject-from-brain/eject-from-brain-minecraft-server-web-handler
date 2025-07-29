@@ -67,6 +67,9 @@ public class ConfigFileService {
         
         # Backup
         server.backup.enabled=%s
+        server.backup.enableRestartNotifications=%s
+        server.backup.notificationTemplate=%s
+        server.backup.notificationTimes=%s
         server.backup.directory=%s
         server.backup.backupTime=%s
         server.backup.dailyEnabled=%s
@@ -90,6 +93,9 @@ public class ConfigFileService {
                 serverProperties.getSecurity().getUsername(),
                 serverProperties.getSecurity().getPassword(),
                 serverProperties.getBackup().isEnabled(),
+                serverProperties.getBackup().isEnableRestartNotifications(),
+                serverProperties.getBackup().getNotificationTemplate(),
+                serverProperties.getBackup().getNotificationTimes(),
                 serverProperties.getBackup().getDirectory(),
                 serverProperties.getBackup().getBackupTime(),
                 serverProperties.getBackup().isDailyEnabled(),

@@ -233,12 +233,6 @@
             color: #121212;
         }
 
-        #restartTimeContainer {
-            margin-top: 10px;
-            padding-left: 20px;
-            border-left: 2px solid var(--accent-color);
-        }
-
     </style>
 </head>
 <body>
@@ -260,7 +254,7 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="backup-tab" data-bs-toggle="tab"
-                    data-bs-target="#backup" type="button" role="tab">Backup</button>
+                    data-bs-target="#backup" type="button" role="tab">Restart & Backup</button>
         </li>
     </ul>
 
@@ -328,7 +322,9 @@
 
         <!-- Settings Tab -->
         <div class="tab-pane fade" id="settings" role="tabpanel">
+
             <div class="row mb-3">
+                <h5>Server run parameters:</h5>
                 <div class="col-md-6">
                     <label class="form-label">Server Port:</label>
                     <input type="number" class="form-control" id="serverPort" min="1" max="65535" value="8080">
@@ -351,6 +347,9 @@
             </div>
 
             <div class="row mb-3">
+
+                <h5>Credentials:</h5>
+
                 <div class="col-md-6">
                     <label class="form-label">UI Username:</label>
                     <input type="text" class="form-control" id="username">
@@ -375,30 +374,52 @@
                 <button id="saveConfigBtnFromSettings" class="btn btn-primary">Save configuration</button>
                 <div class="form-text">This will save all settings to application.properties file</div>
             </div>
+
         </div>
 
         <!-- Backup Tab -->
         <div class="tab-pane fade" id="backup" role="tabpanel">
+
             <div class="row mb-3">
+                <h5>Restart & Backup time: </h5>
                 <div class="col-md-6">
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" id="enableRestartForBackup">
                         <label class="form-check-label" for="enableRestartForBackup">Enable Restart for Backup</label>
                     </div>
-                    <div id="restartTimeContainer">
-                        <label class="form-label">Restart for backup Time (24h format):</label>
-                        <input type="time" class="form-control" id="backupTime" value="04:00">
+                    <label class="form-label">Restart for backup Time (24h format):</label>
+                    <input type="time" class="form-control" id="backupTime" value="04:00">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <h5>Restart Notifications</h5>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="enableRestartNotifications">
+                        <label class="form-check-label" for="enableRestartNotifications">Enable Restart Notifications</label>
+                    </div>
+
+                    <div class="row" id="notificationSettings">
+                        <div class="col-md-6">
+                            <label class="form-label">Notification Template:</label>
+                            <input type="text" class="form-control" id="notificationTemplate"
+                                   value="Server will restart in {time} for scheduled maintenance">
+                            <small class="form-text text-muted">Use {time} as placeholder for time remaining</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Notification Times (comma separated):</label>
+                            <input type="text" class="form-control" id="notificationTimes"
+                                   value="3h,2h,1h,30m,15m,5m,3m,2m,1m">
+                            <small class="form-text text-muted">Format: 3h,30m,15m etc.</small>
+                        </div>
+
                     </div>
                 </div>
             </div>
 
             <div class="col-md-6">
-                <label class="form-label">Backup Directory:</label>
-                <div class="input-group">
-                    <input type="text" class="form-control" id="backupDir" value="backups">
-                    <button class="btn btn-outline-secondary" id="browseBackupDirBtn">Browse</button>
-                </div>
-                <label class="form-label"><br>Backup frequency:</label>
+                <h5><br>Backup frequency: </h5>
             </div>
 
             <div class="row mb-3">
@@ -426,28 +447,37 @@
             </div>
 
             <div class="mb-3">
-                <button id="createBackupBtn" class="btn btn-primary">Create Manual Backup</button>
-                <button id="saveBackupSettingsBtn" class="btn btn-secondary">Save Backup Settings</button>
-            </div>
-
-            <div class="row mb-3">
-                <div class="col-md-12">
-                    <label class="form-label">Available Backups:</label>
-                    <div id="backupTree" style="height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px;">
-                        <ul class="list-group" id="backupTreeList">
-                            <li class="list-group-item">Loading backups...</li>
-                        </ul>
+                <div class="mb-4">
+                    <label class="form-label">Backup Directory:</label>
+                    <input type="text" class="form-control" id="backupDir" value="backups">
+                </div>
+                <div class="mb-4">
+                    <button id="createBackupBtn" class="btn btn-primary">Create Manual Backup</button>
+                    <button id="saveBackupSettingsBtn" class="btn btn-secondary">Save Backup Settings</button>
+                    <div>
                     </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <h5><br>Available backups: </h5>
+                            <div id="backupTree" style="height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px;">
+                                <ul class="list-group" id="backupTreeList">
+                                    <li class="list-group-item">Loading backups...</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <button id="restoreBackupBtn" class="btn btn-warning" disabled>Restore Selected Backup</button>
+                        <button id="deleteBackupBtn" class="btn btn-danger" disabled>Delete Selected Backup</button>
+                    </div>
+
                 </div>
             </div>
-
-            <div class="mb-3">
-                <button id="restoreBackupBtn" class="btn btn-warning" disabled>Restore Selected Backup</button>
-                <button id="deleteBackupBtn" class="btn btn-danger" disabled>Delete Selected Backup</button>
-            </div>
         </div>
-    </div>
 
+    </div>
     <hr>
     <div class="footer">
         Made by <strong>EjectFB</strong> because I can

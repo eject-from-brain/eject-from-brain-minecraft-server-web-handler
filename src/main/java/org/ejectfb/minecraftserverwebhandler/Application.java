@@ -55,8 +55,11 @@ public class Application {
 
                 serverProperties.setBackup(new ServerProperties.Backup());
                 serverProperties.getBackup().setEnabled(true);
+                serverProperties.getBackup().setEnableRestartNotifications(true);
+                serverProperties.getBackup().setNotificationTemplate("Server will restart in {time} for scheduled maintenance");
+                serverProperties.getBackup().setNotificationTimes("server.backup.notificationTimes=3h,2h,1h,30m,15m,5m,3m,2m,1m");
                 serverProperties.getBackup().setDirectory("backups");
-                serverProperties.getBackup().setBackupTime("0 0 4 * * ?");
+                serverProperties.getBackup().setBackupTime("05:00");
                 serverProperties.getBackup().setDailyEnabled(true);
                 serverProperties.getBackup().setDailyMaxBackups(3);
                 serverProperties.getBackup().setWeeklyEnabled(true);
