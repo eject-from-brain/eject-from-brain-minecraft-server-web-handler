@@ -379,106 +379,105 @@
 
         <!-- Backup Tab -->
         <div class="tab-pane fade" id="backup" role="tabpanel">
-
-            <div class="row mb-3">
-                <h5>Restart & Backup time: </h5>
+            <div class="row">
+                <!-- Left Column -->
                 <div class="col-md-6">
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="enableRestartForBackup">
-                        <label class="form-check-label" for="enableRestartForBackup">Enable Restart for Backup</label>
-                    </div>
-                    <label class="form-label">Restart for backup Time (24h format):</label>
-                    <input type="time" class="form-control" id="backupTime" value="04:00">
-                </div>
-            </div>
+                    <div class="mb-4">
+                        <h5>Restart & Backup Settings</h5>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="enableRestartForBackup">
+                            <label class="form-check-label" for="enableRestartForBackup">Enable Restart for Backup</label>
+                        </div>
 
-            <div class="row mb-3">
-                <div class="col-md-12">
-                    <h5>Restart Notifications</h5>
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="enableRestartNotifications">
-                        <label class="form-check-label" for="enableRestartNotifications">Enable Restart Notifications</label>
+                        <div class="mb-3">
+                            <label class="form-label">Restart Time (24h format):</label>
+                            <input type="time" class="form-control" id="backupTime" value="04:00">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Backup Directory:</label>
+                            <input type="text" class="form-control" id="backupDir" value="backups">
+                        </div>
                     </div>
 
-                    <div class="row" id="notificationSettings">
-                        <div class="col-md-6">
+                    <div class="mb-4">
+                        <h5><br><br>Restart Notifications</h5>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="enableRestartNotifications">
+                            <label class="form-check-label" for="enableRestartNotifications">Enable Notifications</label>
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label">Notification Template:</label>
                             <input type="text" class="form-control" id="notificationTemplate"
                                    value="Server will restart in {time} for scheduled maintenance">
                             <small class="form-text text-muted">Use {time} as placeholder for time remaining</small>
                         </div>
-                        <div class="col-md-6">
+
+                        <div class="mb-3">
                             <label class="form-label">Notification Times (comma separated):</label>
                             <input type="text" class="form-control" id="notificationTimes"
                                    value="3h,2h,1h,30m,15m,5m,3m,2m,1m">
                             <small class="form-text text-muted">Format: 3h,30m,15m etc.</small>
                         </div>
-
                     </div>
                 </div>
-            </div>
 
-            <div class="col-md-6">
-                <h5><br>Backup frequency: </h5>
-            </div>
-
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="dailyBackup">
-                        <label class="form-check-label" for="dailyBackup">Daily Backups</label>
-                    </div>
-                    <input type="number" class="form-control mt-2" id="dailyMaxBackups" min="1" max="365" value="7" placeholder="Keep last X days">
-                </div>
-                <div class="col-md-4">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="weeklyBackup">
-                        <label class="form-check-label" for="weeklyBackup">Weekly Backups</label>
-                    </div>
-                    <input type="number" class="form-control mt-2" id="weeklyMaxBackups" min="1" max="52" value="4" placeholder="Keep last Y weeks">
-                </div>
-                <div class="col-md-4">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="monthlyBackup">
-                        <label class="form-check-label" for="monthlyBackup">Monthly Backups</label>
-                    </div>
-                    <input type="number" class="form-control mt-2" id="monthlyMaxBackups" min="1" max="24" value="6" placeholder="Keep last Z months">
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <div class="mb-4">
-                    <label class="form-label">Backup Directory:</label>
-                    <input type="text" class="form-control" id="backupDir" value="backups">
-                </div>
-                <div class="mb-4">
-                    <button id="createBackupBtn" class="btn btn-primary">Create Manual Backup</button>
-                    <button id="saveBackupSettingsBtn" class="btn btn-secondary">Save Backup Settings</button>
-                    <div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <h5><br>Available backups: </h5>
-                            <div id="backupTree" style="height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px;">
-                                <ul class="list-group" id="backupTreeList">
-                                    <li class="list-group-item">Loading backups...</li>
-                                </ul>
+                <!-- Right Column -->
+                <div class="col-md-6">
+                    <div class="mb-4">
+                        <h5>Backup Frequency</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="dailyBackup">
+                                    <label class="form-check-label" for="dailyBackup">Daily Backups</label>
+                                </div>
+                                <input type="number" class="form-control mt-2" id="dailyMaxBackups" min="1" max="365" value="7" placeholder="Keep last X days">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="weeklyBackup">
+                                    <label class="form-check-label" for="weeklyBackup">Weekly Backups</label>
+                                </div>
+                                <input type="number" class="form-control mt-2" id="weeklyMaxBackups" min="1" max="52" value="4" placeholder="Keep last Y weeks">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="monthlyBackup">
+                                    <label class="form-check-label" for="monthlyBackup">Monthly Backups</label>
+                                </div>
+                                <input type="number" class="form-control mt-2" id="monthlyMaxBackups" min="1" max="24" value="6" placeholder="Keep last Z months">
                             </div>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <button id="restoreBackupBtn" class="btn btn-warning" disabled>Restore Selected Backup</button>
-                        <button id="deleteBackupBtn" class="btn btn-danger" disabled>Delete Selected Backup</button>
+                        <button id="createBackupBtn" class="btn btn-primary me-2">Create Manual Backup</button>
+                        <button id="saveBackupSettingsBtn" class="btn btn-secondary">Save Settings</button>
                     </div>
 
+                    <div class="mb-4">
+                        <h5>Available Backups</h5>
+                        <div id="backupTree" style="height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px;">
+                            <ul class="list-group" id="backupTreeList">
+                                <li class="list-group-item">Loading backups...</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <button id="restoreBackupBtn" class="btn btn-warning me-2" disabled>Restore Selected</button>
+                        <button id="deleteBackupBtn" class="btn btn-danger" disabled>Delete Selected</button>
+                    </div>
                 </div>
             </div>
         </div>
 
     </div>
-    <hr>
+
     <div class="footer">
         Made by <strong>EjectFB</strong> because I can
     </div>
