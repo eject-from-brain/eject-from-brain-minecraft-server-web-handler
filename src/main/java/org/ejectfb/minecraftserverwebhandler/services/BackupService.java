@@ -56,6 +56,11 @@ public class BackupService {
     public void startBackupScheduler() {
         stopBackupScheduler();
 
+        if (!serverProperties.getBackup().isEnabled()) {
+            sendToConsole("Backup scheduler is disabled in settings");
+            return;
+        }
+
         int backupHour = parseHourFromTime(serverProperties.getBackup().getBackupTime());
         int backupMinute = parseMinuteFromTime(serverProperties.getBackup().getBackupTime());
 

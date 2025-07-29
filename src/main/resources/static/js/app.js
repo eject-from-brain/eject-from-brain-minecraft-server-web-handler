@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(settings => {
                 backupDir.value = settings.directory || 'backups';
                 backupTime.value = settings.backupTime || '04:00';
+                document.getElementById('enableRestartForBackup').checked = settings.enabled || false;
                 document.getElementById('dailyBackup').checked = settings.dailyEnabled || false;
                 document.getElementById('dailyMaxBackups').value = settings.dailyMaxBackups || 7;
                 document.getElementById('weeklyBackup').checked = settings.weeklyEnabled || false;
@@ -565,6 +566,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     saveBackupSettingsBtn.addEventListener('click', function() {
         const settings = {
+            enabled: document.getElementById('enableRestartForBackup').checked,
             directory: backupDir.value,
             backupTime: backupTime.value,
             dailyEnabled: document.getElementById('dailyBackup').checked,

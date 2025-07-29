@@ -66,6 +66,7 @@ public class ConfigFileService {
         security.user.password=%s
         
         # Backup
+        server.backup.enabled=%s
         server.backup.directory=%s
         server.backup.backupTime=%s
         server.backup.dailyEnabled=%s
@@ -88,6 +89,7 @@ public class ConfigFileService {
                 serverProperties.isAutoRun(),
                 serverProperties.getSecurity().getUsername(),
                 serverProperties.getSecurity().getPassword(),
+                serverProperties.getBackup().isEnabled(),
                 serverProperties.getBackup().getDirectory(),
                 serverProperties.getBackup().getBackupTime(),
                 serverProperties.getBackup().isDailyEnabled(),

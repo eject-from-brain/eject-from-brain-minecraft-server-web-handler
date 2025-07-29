@@ -233,6 +233,12 @@
             color: #121212;
         }
 
+        #restartTimeContainer {
+            margin-top: 10px;
+            padding-left: 20px;
+            border-left: 2px solid var(--accent-color);
+        }
+
     </style>
 </head>
 <body>
@@ -375,16 +381,24 @@
         <div class="tab-pane fade" id="backup" role="tabpanel">
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <label class="form-label">Backup Directory:</label>
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="backupDir" value="backups">
-                        <button class="btn btn-outline-secondary" id="browseBackupDirBtn">Browse</button>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="enableRestartForBackup">
+                        <label class="form-check-label" for="enableRestartForBackup">Enable Restart for Backup</label>
+                    </div>
+                    <div id="restartTimeContainer">
+                        <label class="form-label">Restart for backup Time (24h format):</label>
+                        <input type="time" class="form-control" id="backupTime" value="04:00">
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Restart for backup Time (24h format):</label>
-                    <input type="time" class="form-control" id="backupTime" value="04:00">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Backup Directory:</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="backupDir" value="backups">
+                    <button class="btn btn-outline-secondary" id="browseBackupDirBtn">Browse</button>
                 </div>
+                <label class="form-label"><br>Backup frequency:</label>
             </div>
 
             <div class="row mb-3">

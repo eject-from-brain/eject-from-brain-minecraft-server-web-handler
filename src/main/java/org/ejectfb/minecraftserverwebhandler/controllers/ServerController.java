@@ -347,6 +347,7 @@ public class ServerController {
     @PostMapping("/backup/settings")
     public ResponseEntity<String> saveBackupSettings(@RequestBody Map<String, Object> settings) {
         try {
+            serverProperties.getBackup().setEnabled(Boolean.parseBoolean(settings.get("enabled").toString()));
             serverProperties.getBackup().setDirectory(settings.get("directory").toString());
             serverProperties.getBackup().setBackupTime(settings.get("backupTime").toString());
             serverProperties.getBackup().setDailyEnabled(Boolean.parseBoolean(settings.get("dailyEnabled").toString()));

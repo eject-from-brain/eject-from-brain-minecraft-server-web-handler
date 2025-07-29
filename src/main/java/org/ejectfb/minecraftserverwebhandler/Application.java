@@ -54,6 +54,7 @@ public class Application {
                 serverProperties.getSecurity().setPassword("admin");
 
                 serverProperties.setBackup(new ServerProperties.Backup());
+                serverProperties.getBackup().setEnabled(true);
                 serverProperties.getBackup().setDirectory("backups");
                 serverProperties.getBackup().setBackupTime("0 0 4 * * ?");
                 serverProperties.getBackup().setDailyEnabled(true);
