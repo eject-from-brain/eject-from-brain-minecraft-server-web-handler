@@ -252,7 +252,7 @@ public class BackupService {
             Path finalServerDir = serverDir;
             Files.walk(serverDir)
                     .filter(path -> !Files.isDirectory(path))
-                    .filter(path -> !path.startsWith(finalBackupDir)) // Исключаем саму папку с бэкапами
+                    .filter(path -> !path.startsWith(finalBackupDir.getParent())) // Исключаем саму папку с бэкапами
                     .forEach(path -> {
                         try {
                             Path relativePath = finalServerDir.relativize(path);
