@@ -10,12 +10,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Service
 public class ConsoleLogService {
     private final List<String> logs = Collections.synchronizedList(new ArrayList<>());
-    private static final int MAX_LOG_SIZE = 5000; // Увеличьте размер для хранения большего количества логов
+    private static final int MAX_LOG_SIZE = 500;
 
     public synchronized void addLog(String message) {
         logs.add(message);
         if (logs.size() > MAX_LOG_SIZE) {
-            logs.subList(0, 1000).clear(); // Удаляем старые логи блоками
+            logs.subList(0, 100).clear();
         }
     }
 
