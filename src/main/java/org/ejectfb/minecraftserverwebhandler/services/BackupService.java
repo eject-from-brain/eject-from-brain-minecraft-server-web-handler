@@ -18,6 +18,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -265,8 +266,10 @@ public class BackupService {
                     });
         }
 
-        sendToConsole("Backup created: " + zipPath);
-        telegramBotService.sendServerBackupCreatedNotification(backupName);
+        String backupSize = String.format(Locale.US, "%.1f"
+                , new File(backupDir.toFile(), backupName).length() / (1024.0 * 1024 * 1024));
+        sendToConsole("Backup created: " + zipPath + " size: " + backupSize);
+        telegramBotService.sendServerBackupCreatedNotification(backupName, type, backupSize);
     }
 
     private void handleBackupError(Exception e, String type) {

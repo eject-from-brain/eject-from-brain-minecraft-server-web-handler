@@ -131,8 +131,9 @@ public class TelegramBotService {
         return sendMessage(message);
     }
 
-    public boolean sendServerBackupCreatedNotification(String backupName) {
-        String message = "🔋 Бэкап " + backupName + " создан\n" +
+    public boolean sendServerBackupCreatedNotification(String backupName, String type, String backupSize) {
+        String message = "🔋 " + type + " бэкап " + backupName + " создан\n" +
+                "📦 Размер бэкапа: " + backupSize + "Гб\n" +
                 "⏰ Время создания бэкапа: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         return sendMessage(message);
     }
