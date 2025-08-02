@@ -219,7 +219,7 @@ public class ServerService {
         }
     }
 
-    private void sendToConsole(String message) {
+    public void sendToConsole(String message) {
         messagingTemplate.convertAndSend("/topic/console", message);
     }
 

@@ -67,6 +67,7 @@ public class ServerController {
     public ResponseEntity<String> startServer(@RequestParam String command) {
         try {
             serverDataService.setServerStartTime(System.currentTimeMillis());
+            backupService.startBackupScheduler();
             serverService.startServer(command);
             sendToConsole("Сервер запущен: " + command);
 

@@ -60,7 +60,7 @@ public class BackupService {
         stopBackupScheduler();
 
         if (!serverProperties.getBackup().isEnabled()) {
-            sendToConsole("Backup scheduler is disabled in settings");
+            serverService.sendToConsole("Backup scheduler is disabled in settings");
             return;
         }
 
@@ -76,20 +76,20 @@ public class BackupService {
                 TimeUnit.MILLISECONDS
         );
 
-        sendToConsole("Backup scheduler started. Next backup at: " +
+        serverService.sendToConsole("Backup scheduler started. Next backup at: " +
                 LocalDateTime.now().plus(initialDelay, ChronoUnit.MILLIS));
     }
 
     public void stopBackupScheduler() {
         if (backupTask != null) {
             backupTask.cancel(false);
-            sendToConsole("Backup scheduler stopped");
+            serverService.sendToConsole("Backup scheduler stopped");
         }
     }
 
     private void performScheduledBackups() {
         LocalDateTime now = LocalDateTime.now();
-        sendToConsole("Starting scheduled backup procedure at " + now);
+        serverService.sendToConsole("Starting scheduled backup procedure at " + now);
         telegramBotService.sendMessage("⏰ Начало планового создания бэкапов");
 
         CompletableFuture<Void> backupChain = CompletableFuture.completedFuture(null);
@@ -105,7 +105,7 @@ public class BackupService {
                                 }
                             })
                             .exceptionally(e -> {
-                                sendToConsole("⚠️ Daily backup failed: " + e.getMessage());
+                                serverService.sendToConsole("⚠️ Daily backup failed: " + e.getMessage());
                                 return null;
                             })
             );
@@ -122,7 +122,7 @@ public class BackupService {
                                 }
                             })
                             .exceptionally(e -> {
-                                sendToConsole("⚠️ Weekly backup failed: " + e.getMessage());
+                                serverService.sendToConsole("⚠️ Weekly backup failed: " + e.getMessage());
                                 return null;
                             })
             );
@@ -139,7 +139,7 @@ public class BackupService {
                                 }
                             })
                             .exceptionally(e -> {
-                                sendToConsole("⚠️ Monthly backup failed: " + e.getMessage());
+                                serverService.sendToConsole("⚠️ Monthly backup failed: " + e.getMessage());
                                 return null;
                             })
             );
@@ -147,10 +147,10 @@ public class BackupService {
 
         backupChain
                 .thenRun(() -> {
-                    sendToConsole("All scheduled backups completed");
+                    serverService.sendToConsole("All scheduled backups completed");
                 })
                 .exceptionally(e -> {
-                    sendToConsole("Some backups failed: " + e.getMessage());
+                    serverService.sendToConsole("Some backups failed: " + e.getMessage());
                     telegramBotService.sendMessage("⚠️ Некоторые бэкапы не были созданы: " + e.getMessage());
                     return null;
                 });
@@ -223,7 +223,7 @@ public class BackupService {
                     serverService.startServer(serverService.getServerCommand());
                     telegramBotService.sendServerBackupCreatingFailedNotification(e.getMessage());
                 } catch (IOException ex) {
-                    sendToConsole("❌ Failed to restart server after backup error: " + ex.getMessage());
+                    serverService.sendToConsole("❌ Failed to restart server after backup error: " + ex.getMessage());
                 }
             }
         }, scheduler);
@@ -261,23 +261,23 @@ public class BackupService {
                             Files.copy(path, zos);
                             zos.closeEntry();
                         } catch (IOException e) {
-                            sendToConsole("⚠️ Error adding file to backup: " + path + " - " + e.getMessage());
+                            serverService.sendToConsole("⚠️ Error adding file to backup: " + path + " - " + e.getMessage());
                         }
                     });
         }
 
         String backupSize = String.format(Locale.US, "%.1f"
                 , new File(backupDir.toFile(), backupName).length() / (1024.0 * 1024 * 1024));
-        sendToConsole("Backup created: " + zipPath + " size: " + backupSize);
+        serverService.sendToConsole("Backup created: " + zipPath + " size: " + backupSize + "Gb");
         telegramBotService.sendServerBackupCreatedNotification(backupName, type, backupSize);
     }
 
     private void handleBackupError(Exception e, String type) {
-        sendToConsole("Backup creation failed for " + type + ": " + e.getMessage());
+        serverService.sendToConsole("Backup creation failed for " + type + ": " + e.getMessage());
         telegramBotService.sendMessage("❌ Ошибка создания бэкапа типа " + type + ": " + e.getMessage());
 
         if (e instanceof UncheckedIOException) {
-            sendToConsole("File operation error: " + e.getCause().getMessage());
+            serverService.sendToConsole("File operation error: " + e.getCause().getMessage());
         }
     }
 
@@ -286,7 +286,7 @@ public class BackupService {
 
         if (serverService.isServerRunning()) {
             telegramBotService.sendServerBackupRestoringNotification(backupName);
-            sendToConsole("Starting backup restore procedure");
+            serverService.sendToConsole("Starting backup restore procedure");
 
             serverService.stopServer();
 
@@ -353,23 +353,23 @@ public class BackupService {
                         }
                     });
 
-            sendToConsole("Backup restored: " + backupName);
+            serverService.sendToConsole("Backup restored: " + backupName);
             telegramBotService.sendServerBackupRestoredNotification(backupName);
         } finally {
             try {
                 FileUtils.deleteDirectory(tempDir.toFile());
             } catch (IOException e) {
-                sendToConsole("Warning: Failed to delete temp directory: " + e.getMessage());
+                serverService.sendToConsole("Warning: Failed to delete temp directory: " + e.getMessage());
             }
         }
     }
 
     private void handleRestoreError(Exception e, String backupName) {
-        sendToConsole("Backup restore failed: " + e.getMessage());
+        serverService.sendToConsole("Backup restore failed: " + e.getMessage());
         telegramBotService.sendMessage("❌ Ошибка восстановления бэкапа " + backupName + ": " + e.getMessage());
 
         if (e instanceof UncheckedIOException) {
-            sendToConsole("File operation error: " + e.getCause().getMessage());
+            serverService.sendToConsole("File operation error: " + e.getCause().getMessage());
         }
     }
 
@@ -382,7 +382,7 @@ public class BackupService {
         }
 
         Files.delete(backupPath);
-        sendToConsole("Backup deleted: " + backupName);
+        serverService.sendToConsole("Backup deleted: " + backupName);
     }
 
     private void cleanupOldBackups(String type, int maxBackups) throws IOException {
@@ -403,7 +403,7 @@ public class BackupService {
 
                 for (int i = 0; i < backups.size() - maxBackups; i++) {
                     Files.delete(backups.get(i));
-                    sendToConsole("Deleted old backup: " + backups.get(i).getFileName());
+                    serverService.sendToConsole("Deleted old backup: " + backups.get(i).getFileName());
                 }
             }
         }
@@ -447,7 +447,7 @@ public class BackupService {
                                     String message = template.replace("{time}", finalTimeStr);
                                     serverService.sendCommand("say " + message);
                                 } catch (IOException e) {
-                                    sendToConsole("Error sending notification: " + e.getMessage());
+                                    serverService.sendToConsole("Error sending notification: " + e.getMessage());
                                 }
                             }, Duration.between(LocalDateTime.now(), restartTime).toMillis() - delay,
                             TimeUnit.MILLISECONDS);
@@ -455,7 +455,7 @@ public class BackupService {
                     notificationTasks.add(task);
                 }
             } catch (Exception e) {
-                sendToConsole("Invalid notification time format: " + timeStr);
+                serverService.sendToConsole("Invalid notification time format: " + timeStr);
             }
         }
     }
@@ -477,9 +477,5 @@ public class BackupService {
             return Long.parseLong(timeStr.substring(0, timeStr.length() - 1)) * 60 * 1000;
         }
         throw new Exception("Invalid time format - use 'h' for hours or 'm' for minutes");
-    }
-
-    private void sendToConsole(String message) {
-        messagingTemplate.convertAndSend("/topic/console", message);
     }
 }
