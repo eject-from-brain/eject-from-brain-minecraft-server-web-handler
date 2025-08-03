@@ -232,6 +232,7 @@ public class BackupService {
     }
 
     private void performBackupCreation(String type) throws IOException {
+        long backupDurationStart = System.currentTimeMillis();
         Path serverDir = Path.of(new File(new File(serverProperties.getJar()).getPath()).getAbsoluteFile().getParent());
         Path backupDir = Paths.get(serverProperties.getBackup().getDirectory(), type).toAbsolutePath();
 
@@ -269,7 +270,7 @@ public class BackupService {
         String backupSize = String.format(Locale.US, "%.1f"
                 , new File(backupDir.toFile(), backupName).length() / (1024.0 * 1024 * 1024));
         serverService.sendToConsole("Backup created: " + zipPath + " size: " + backupSize + "Gb");
-        telegramBotService.sendServerBackupCreatedNotification(backupName, type, backupSize);
+        telegramBotService.sendServerBackupCreatedNotification(backupName, type, backupSize, System.currentTimeMillis() - backupDurationStart);
     }
 
     private void handleBackupError(Exception e, String type) {

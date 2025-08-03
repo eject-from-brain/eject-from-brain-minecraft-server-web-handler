@@ -5,6 +5,9 @@ import org.ejectfb.minecraftserverwebhandler.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -18,9 +21,10 @@ public class ServerDataService {
     private final AtomicReference<String> memory = new AtomicReference<>("N/A");
     private final AtomicLong serverStartTime = new AtomicLong(0);
     private final AtomicReference<String> uptime = new AtomicReference<>("N/A");
+    private final Map<String, Long> playerSessions = new ConcurrentHashMap<>();
 
     @Autowired
-    private TelegramBotService  telegramBotService;
+    private TelegramBotService telegramBotService;
 
     @PostConstruct
     public void init() {
@@ -38,10 +42,20 @@ public class ServerDataService {
             tps.set(parseTPS(line));
         } else if (line.contains("[Server thread/INFO]: Done (")) {
             telegramBotService.sendServerStartedNotification();
-        } else if (line.contains("The user ") && line.contains(" has successfully logged in.")) {
-            telegramBotService.sendServerNewPlayerJoinedNotification(parseNewJoinedPlayer(line));
+        } else if ((line.contains("The user ") && line.contains(" has successfully logged in."))
+                || line.contains("joined the game")) {
+            String playerName = parseNewJoinedByNLoginPlayer(line);
+            if (Objects.equals(playerName, "N/A")) playerName = parseNewJoinedPlayer(line);
+            playerSessions.put(playerName, System.currentTimeMillis());
+            telegramBotService.sendServerNewPlayerJoinedNotification(playerName);
         }else if (line.contains(" lost connection: Disconnected")) {
-            telegramBotService.sendServerPlayerLeftNotification(parsePlayerLeft(line));
+            String playerName = parsePlayerLeft(line);
+            long sessionDuration = -1;
+            if (playerSessions.containsKey(playerName)) {
+                sessionDuration = System.currentTimeMillis() - playerSessions.get(playerName);
+                playerSessions.remove(playerName);
+            }
+            telegramBotService.sendServerPlayerLeftNotification(playerName,sessionDuration);
         }
         uptime.set(calculateUptime());
     }
@@ -90,8 +104,18 @@ public class ServerDataService {
         return "N/A";
     }
 
-    public String parseNewJoinedPlayer(String consoleText) {
+    public String parseNewJoinedByNLoginPlayer(String consoleText) {
         Pattern pattern = Pattern.compile("user (\\w+) has successfully logged in.");
+        Matcher matcher = pattern.matcher(consoleText);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return "N/A";
+    }
+
+    public String parseNewJoinedPlayer(String consoleText) {
+        Pattern pattern = Pattern.compile("(\\w+) joined the game");
         Matcher matcher = pattern.matcher(consoleText);
 
         if (matcher.find()) {

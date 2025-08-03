@@ -131,10 +131,20 @@ public class TelegramBotService {
         return sendMessage(message);
     }
 
-    public boolean sendServerBackupCreatedNotification(String backupName, String type, String backupSize) {
+    public boolean sendServerBackupCreatedNotification(String backupName, String type, String backupSize, long backupDuration) {
+        long seconds = backupDuration / 1000;
+        String backupDurationTime = "";
+        if (seconds < 60) {
+            backupDurationTime += seconds + " секунд\n";
+        } else {
+            long minutes = seconds / 60;
+            long remainingMinutes = seconds % 60;
+            backupDurationTime += minutes + " минут " + remainingMinutes + " секунд\n";
+        }
         String message = "🔋 " + type + " бэкап " + backupName + " создан\n" +
                 "📦 Размер бэкапа: " + backupSize + "Гб\n" +
-                "⏰ Время создания бэкапа: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                "⏰ Время создания бэкапа: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "\n" +
+                "⏱️ Затрачено времени: " + backupDurationTime;
         return sendMessage(message);
     }
 
@@ -151,8 +161,22 @@ public class TelegramBotService {
         return sendMessage(message);
     }
 
-    public boolean sendServerPlayerLeftNotification(String playerName) {
-        String message = "➖ Игрок " + playerName + " отключился\n" +
+    public boolean sendServerPlayerLeftNotification(String playerName, long sessionTime) {
+        String sessionInfo;
+        if (sessionTime == -1) {
+            sessionInfo = "";
+        } else {
+            sessionInfo = "⏱ Сессия: ";
+            long minutes = sessionTime / 1000 / 60;
+            if (minutes < 60) {
+                sessionInfo += minutes + " минут\n";
+            } else {
+                long hours = minutes / 60;
+                long remainingMinutes = minutes % 60;
+                sessionInfo += hours + " часов " + remainingMinutes + " минут\n";
+            }
+        }
+        String message = "➖ Игрок " + playerName + " отключился\n" + sessionInfo +
                 "⏰ Время выхода: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         return sendMessage(message);
     }
